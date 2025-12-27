@@ -1,7 +1,7 @@
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: '50mb',
     },
   },
 };
@@ -9,11 +9,57 @@ export const config = {
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // GET request returns metadata for all images
+  if (req.method === 'GET') {
+    try {
+      const token = process.env.GITHUB_TOKEN;
+      const owner = 'justinnewbold';
+      const repo = 'images';
+      const folder = req.query.folder || 'references';
+      
+      const response = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/public/${folder}`,
+        {
+          headers: {
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return res.status(response.status).json({ error: 'Failed to fetch images' });
+      }
+
+      const files = await response.json();
+      
+      // Filter for images only and format response
+      const images = files
+        .filter(f => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name))
+        .map(f => ({
+          name: f.name,
+          url: `https://images.newbold.cloud/${folder}/${f.name}`,
+          raw_url: f.download_url,
+          size: f.size,
+          sha: f.sha
+        }));
+
+      return res.status(200).json({ 
+        folder,
+        count: images.length,
+        images 
+      });
+
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
 
   if (req.method !== 'POST') {
@@ -21,7 +67,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { filename, content, folder } = req.body;
+    const { filename, content, folder, tags, description } = req.body;
 
     if (!filename || !content || !folder) {
       return res.status(400).json({ error: 'Missing required fields: filename, content, folder' });
@@ -32,6 +78,7 @@ export default async function handler(req, res) {
     const repo = 'images';
     const path = `public/${folder}/${filename}`;
 
+    // Upload the image
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
       {
@@ -42,7 +89,7 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Upload ${filename}`,
+          message: `Upload ${filename}${tags ? ` [tags: ${tags}]` : ''}${description ? ` - ${description}` : ''}`,
           content: content,
         }),
       }
@@ -56,13 +103,78 @@ export default async function handler(req, res) {
 
     const imageUrl = `https://images.newbold.cloud/${folder}/${filename}`;
     
+    // If tags or description provided, update the metadata JSON
+    if (tags || description) {
+      await updateMetadata(token, owner, repo, folder, filename, { tags, description, uploadedAt: new Date().toISOString() });
+    }
+    
     return res.status(200).json({ 
       success: true, 
       url: imageUrl,
+      filename,
+      folder,
+      tags: tags || null,
+      description: description || null,
       commit: data.commit?.html_url 
     });
 
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+}
+
+async function updateMetadata(token, owner, repo, folder, filename, metadata) {
+  const metadataPath = `public/${folder}/metadata.json`;
+  
+  try {
+    // Try to get existing metadata
+    const getResponse = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${metadataPath}`,
+      {
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+        },
+      }
+    );
+
+    let existingMetadata = {};
+    let sha = null;
+
+    if (getResponse.ok) {
+      const data = await getResponse.json();
+      sha = data.sha;
+      existingMetadata = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
+    }
+
+    // Add new image metadata
+    existingMetadata[filename] = metadata;
+
+    // Save updated metadata
+    const content = Buffer.from(JSON.stringify(existingMetadata, null, 2)).toString('base64');
+    
+    const putBody = {
+      message: `Update metadata for ${filename}`,
+      content: content,
+    };
+    
+    if (sha) {
+      putBody.sha = sha;
+    }
+
+    await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${metadataPath}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(putBody),
+      }
+    );
+  } catch (e) {
+    console.error('Metadata update failed:', e);
   }
 }
