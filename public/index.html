@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Assets - newbold.cloud</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        .folders {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .folder {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 24px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        .folder:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+            border-color: #00d4ff;
+        }
+        .folder-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .folder-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+        .folder-desc {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .usage {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+        .usage h2 {
+            font-size: 1.3rem;
+            margin-bottom: 16px;
+            color: #00d4ff;
+        }
+        code {
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            color: #7b2cbf;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Image Assets</h1>
+        <p class="subtitle">Public image hosting for AI generation & projects</p>
+        
+        <div class="folders">
+            <a href="/references/" class="folder">
+                <div class="folder-icon">🎨</div>
+                <div class="folder-name">references</div>
+                <div class="folder-desc">AI reference images</div>
+            </a>
+            <a href="/logos/" class="folder">
+                <div class="folder-icon">⭐</div>
+                <div class="folder-name">logos</div>
+                <div class="folder-desc">Brand logos & icons</div>
+            </a>
+            <a href="/textures/" class="folder">
+                <div class="folder-icon">🧱</div>
+                <div class="folder-name">textures</div>
+                <div class="folder-desc">Textures & patterns</div>
+            </a>
+            <a href="/photos/" class="folder">
+                <div class="folder-icon">📷</div>
+                <div class="folder-name">photos</div>
+                <div class="folder-desc">General photos</div>
+            </a>
+            <a href="/assets/" class="folder">
+                <div class="folder-icon">📦</div>
+                <div class="folder-name">assets</div>
+                <div class="folder-desc">Misc resources</div>
+            </a>
+        </div>
+        
+        <div class="usage">
+            <h2>How to Use</h2>
+            <p style="margin-bottom: 12px;">Access any image at:</p>
+            <code>https://images.newbold.cloud/[folder]/[filename]</code>
+            <p style="margin-top: 16px; color: #888;">
+                Example: <code>https://images.newbold.cloud/references/burger.png</code>
+            </p>
+        </div>
+        
+        <p class="footer">Hosted on Vercel • newbold.cloud</p>
+    </div>
+</body>
+</html>
