@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploader - newbold.cloud</title>
+    <meta name="description" content="Upload and host images for AI image generation. Get instant URLs for Midjourney, DALL-E, Stable Diffusion and more.">
+    <meta property="og:title" content="Image Assets - newbold.cloud">
+    <meta property="og:description" content="Public image hosting for AI generation">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://images.newbold.cloud">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -17,10 +18,7 @@
             color: #fff;
             padding: 40px 20px;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        .container { max-width: 700px; margin: 0 auto; }
         h1 {
             font-size: 2rem;
             margin-bottom: 8px;
@@ -28,10 +26,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .subtitle {
-            color: #888;
-            margin-bottom: 30px;
-        }
+        .subtitle { color: #888; margin-bottom: 30px; }
         .upload-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -39,16 +34,14 @@
             padding: 30px;
             margin-bottom: 24px;
         }
-        .folder-select {
-            margin-bottom: 20px;
-        }
-        .folder-select label {
+        .form-group { margin-bottom: 20px; }
+        .form-group label {
             display: block;
             margin-bottom: 8px;
             color: #aaa;
             font-size: 0.9rem;
         }
-        .folder-select select {
+        .form-group select, .form-group input, .form-group textarea {
             width: 100%;
             padding: 12px 16px;
             border-radius: 8px;
@@ -56,12 +49,13 @@
             background: rgba(0,0,0,0.3);
             color: #fff;
             font-size: 1rem;
-            cursor: pointer;
         }
-        .folder-select select:focus {
+        .form-group select:focus, .form-group input:focus, .form-group textarea:focus {
             outline: none;
             border-color: #00d4ff;
         }
+        .form-group textarea { resize: vertical; min-height: 60px; }
+        .form-group small { color: #666; font-size: 0.8rem; margin-top: 4px; display: block; }
         .drop-zone {
             border: 2px dashed rgba(255,255,255,0.3);
             border-radius: 12px;
@@ -75,63 +69,75 @@
             border-color: #00d4ff;
             background: rgba(0,212,255,0.1);
         }
-        .drop-zone-icon {
-            font-size: 3rem;
-            margin-bottom: 12px;
-        }
-        .drop-zone-text {
-            color: #888;
-        }
-        .drop-zone-text span {
-            color: #00d4ff;
-            text-decoration: underline;
-        }
-        #fileInput {
-            display: none;
-        }
+        .drop-zone-icon { font-size: 3rem; margin-bottom: 12px; }
+        .drop-zone-text { color: #888; }
+        .drop-zone-text span { color: #00d4ff; text-decoration: underline; }
+        #fileInput { display: none; }
         .preview-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
             margin-bottom: 20px;
         }
         .preview-item {
-            position: relative;
-            aspect-ratio: 1;
-            border-radius: 8px;
-            overflow: hidden;
+            display: flex;
+            gap: 16px;
+            padding: 16px;
             background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            align-items: flex-start;
         }
         .preview-item img {
-            width: 100%;
-            height: 100%;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .preview-item .details { flex: 1; }
+        .preview-item .filename-input {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .preview-item .tags-input {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.85rem;
+        }
+        .preview-item .desc-input {
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.85rem;
         }
         .preview-item .remove {
-            position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 24px;
-            height: 24px;
-            background: rgba(255,0,0,0.8);
+            padding: 8px 12px;
+            background: rgba(255,0,0,0.3);
             border: none;
-            border-radius: 50%;
+            border-radius: 6px;
             color: #fff;
             cursor: pointer;
-            font-size: 14px;
-            line-height: 1;
+            font-size: 0.85rem;
         }
-        .preview-item .filename {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 4px;
-            background: rgba(0,0,0,0.7);
-            font-size: 0.7rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .preview-item .remove:hover { background: rgba(255,0,0,0.5); }
+        .preview-item .original-name {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 4px;
         }
         .upload-btn {
             width: 100%;
@@ -145,13 +151,8 @@
             cursor: pointer;
             transition: transform 0.2s, opacity 0.2s;
         }
-        .upload-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-        }
-        .upload-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .upload-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .status {
             margin-top: 20px;
             padding: 16px;
@@ -173,9 +174,7 @@
             background: rgba(0,212,255,0.1);
             border: 1px solid rgba(0,212,255,0.3);
         }
-        .uploaded-urls {
-            margin-top: 20px;
-        }
+        .uploaded-urls { margin-top: 20px; }
         .uploaded-url {
             display: flex;
             align-items: center;
@@ -202,18 +201,14 @@
             cursor: pointer;
             font-size: 0.8rem;
         }
-        .uploaded-url button:hover {
-            background: rgba(255,255,255,0.2);
-        }
+        .uploaded-url button:hover { background: rgba(255,255,255,0.2); }
         .back-link {
             display: inline-block;
             margin-top: 20px;
             color: #888;
             text-decoration: none;
         }
-        .back-link:hover {
-            color: #00d4ff;
-        }
+        .back-link:hover { color: #00d4ff; }
         .progress-bar {
             width: 100%;
             height: 4px;
@@ -238,6 +233,16 @@
             color: #00ff64;
             margin-left: 10px;
         }
+        .tip-box {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        .tip-box strong { color: #00d4ff; }
     </style>
 </head>
 <body>
@@ -246,7 +251,11 @@
         <p class="subtitle">Drag & drop images to upload instantly</p>
         
         <div class="upload-card">
-            <div class="folder-select">
+            <div class="tip-box">
+                <strong>💡 AI Tip:</strong> Add tags and descriptions to help AI tools understand your images. Tags are stored as metadata and can be retrieved via the API.
+            </div>
+            
+            <div class="form-group">
                 <label>📁 Upload to folder</label>
                 <select id="folderSelect">
                     <option value="references">references - AI reference images</option>
@@ -297,7 +306,6 @@
         
         let filesToUpload = [];
         
-        // Drag and drop
         dropZone.addEventListener('click', () => fileInput.click());
         
         dropZone.addEventListener('dragover', (e) => {
@@ -322,31 +330,71 @@
         function handleFiles(files) {
             for (const file of files) {
                 if (file.type.startsWith('image/')) {
-                    filesToUpload.push(file);
-                    addPreview(file);
+                    const id = Date.now() + Math.random().toString(36).substr(2, 9);
+                    const ext = file.name.split('.').pop();
+                    const baseName = file.name.replace(/\.[^/.]+$/, '');
+                    
+                    filesToUpload.push({
+                        id,
+                        file,
+                        originalName: file.name,
+                        newName: baseName,
+                        extension: ext,
+                        tags: '',
+                        description: ''
+                    });
+                    addPreview(filesToUpload[filesToUpload.length - 1]);
                 }
             }
             updateUploadButton();
         }
         
-        function addPreview(file) {
+        function addPreview(fileObj) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const div = document.createElement('div');
                 div.className = 'preview-item';
+                div.id = `preview-${fileObj.id}`;
                 div.innerHTML = `
-                    <img src="${e.target.result}" alt="${file.name}">
-                    <button class="remove" onclick="removeFile('${file.name}', this)">×</button>
-                    <div class="filename">${file.name}</div>
+                    <img src="${e.target.result}" alt="${fileObj.originalName}">
+                    <div class="details">
+                        <div class="original-name">Original: ${fileObj.originalName}</div>
+                        <input type="text" class="filename-input" placeholder="Filename (without extension)" value="${fileObj.newName}" data-id="${fileObj.id}" onchange="updateFileName(this)">
+                        <input type="text" class="tags-input" placeholder="Tags (comma separated: burger, food, restaurant)" data-id="${fileObj.id}" onchange="updateTags(this)">
+                        <input type="text" class="desc-input" placeholder="Description for AI (e.g., 'A juicy burger with cheese')" data-id="${fileObj.id}" onchange="updateDesc(this)">
+                    </div>
+                    <button class="remove" onclick="removeFile('${fileObj.id}')">✕</button>
                 `;
                 previewContainer.appendChild(div);
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(fileObj.file);
         }
         
-        function removeFile(filename, btn) {
-            filesToUpload = filesToUpload.filter(f => f.name !== filename);
-            btn.parentElement.remove();
+        function updateFileName(input) {
+            const id = input.dataset.id;
+            const fileObj = filesToUpload.find(f => f.id === id);
+            if (fileObj) {
+                // Sanitize filename: remove special chars, replace spaces with hyphens
+                fileObj.newName = input.value.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-');
+                input.value = fileObj.newName;
+            }
+        }
+        
+        function updateTags(input) {
+            const id = input.dataset.id;
+            const fileObj = filesToUpload.find(f => f.id === id);
+            if (fileObj) fileObj.tags = input.value;
+        }
+        
+        function updateDesc(input) {
+            const id = input.dataset.id;
+            const fileObj = filesToUpload.find(f => f.id === id);
+            if (fileObj) fileObj.description = input.value;
+        }
+        
+        function removeFile(id) {
+            filesToUpload = filesToUpload.filter(f => f.id !== id);
+            document.getElementById(`preview-${id}`)?.remove();
             updateUploadButton();
         }
         
@@ -365,22 +413,23 @@
             let uploaded = 0;
             const total = filesToUpload.length;
             
-            for (const file of filesToUpload) {
-                showStatus('uploading', `Uploading ${file.name}... (${uploaded + 1}/${total})`);
+            for (const fileObj of filesToUpload) {
+                const filename = `${fileObj.newName}.${fileObj.extension}`;
+                showStatus('uploading', `Uploading ${filename}... (${uploaded + 1}/${total})`);
                 progressFill.style.width = `${(uploaded / total) * 100}%`;
                 
                 try {
-                    const base64 = await fileToBase64(file);
+                    const base64 = await fileToBase64(fileObj.file);
                     
                     const response = await fetch('/api/upload', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            filename: file.name,
+                            filename: filename,
                             content: base64,
-                            folder: folder
+                            folder: folder,
+                            tags: fileObj.tags || null,
+                            description: fileObj.description || null
                         })
                     });
                     
@@ -390,12 +439,12 @@
                         throw new Error(data.error || 'Upload failed');
                     }
                     
-                    addUploadedUrl(data.url, file.name);
+                    addUploadedUrl(data.url, filename);
                     uploaded++;
                     progressFill.style.width = `${(uploaded / total) * 100}%`;
                     
                 } catch (err) {
-                    showStatus('error', `Error uploading ${file.name}: ${err.message}`);
+                    showStatus('error', `Error uploading ${filename}: ${err.message}`);
                     uploadBtn.disabled = false;
                     return;
                 }
@@ -412,10 +461,7 @@
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onload = () => {
-                    const base64 = reader.result.split(',')[1];
-                    resolve(base64);
-                };
+                reader.onload = () => resolve(reader.result.split(',')[1]);
                 reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
