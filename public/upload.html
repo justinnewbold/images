@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploader - newbold.cloud</title>
     <meta name="description" content="Upload and host images for AI image generation. Get instant URLs for Midjourney, DALL-E, Stable Diffusion and more.">
-    <meta property="og:title" content="Image Assets - newbold.cloud">
-    <meta property="og:description" content="Public image hosting for AI generation">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://images.newbold.cloud">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -54,8 +50,6 @@
             outline: none;
             border-color: #00d4ff;
         }
-        .form-group textarea { resize: vertical; min-height: 60px; }
-        .form-group small { color: #666; font-size: 0.8rem; margin-top: 4px; display: block; }
         .drop-zone {
             border: 2px dashed rgba(255,255,255,0.3);
             border-radius: 12px;
@@ -95,29 +89,12 @@
             flex-shrink: 0;
         }
         .preview-item .details { flex: 1; }
-        .preview-item .filename-input {
-            width: 100%;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-size: 0.9rem;
-        }
-        .preview-item .tags-input {
-            width: 100%;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-size: 0.85rem;
-        }
+        .preview-item .filename-input,
+        .preview-item .tags-input,
         .preview-item .desc-input {
             width: 100%;
             padding: 8px 12px;
+            margin-bottom: 8px;
             border-radius: 6px;
             border: 1px solid rgba(255,255,255,0.2);
             background: rgba(0,0,0,0.3);
@@ -131,14 +108,14 @@
             border-radius: 6px;
             color: #fff;
             cursor: pointer;
-            font-size: 0.85rem;
         }
         .preview-item .remove:hover { background: rgba(255,0,0,0.5); }
-        .preview-item .original-name {
+        .preview-item .file-info {
             font-size: 0.75rem;
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
+        .preview-item .file-info .compressed { color: #00ff64; }
         .upload-btn {
             width: 100%;
             padding: 16px;
@@ -199,7 +176,6 @@
             border-radius: 4px;
             color: #fff;
             cursor: pointer;
-            font-size: 0.8rem;
         }
         .uploaded-url button:hover { background: rgba(255,255,255,0.2); }
         .back-link {
@@ -243,6 +219,19 @@
             color: #aaa;
         }
         .tip-box strong { color: #00d4ff; }
+        .quality-select {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .quality-select select {
+            flex: 1;
+        }
+        .quality-select .size-info {
+            font-size: 0.8rem;
+            color: #888;
+            min-width: 80px;
+        }
     </style>
 </head>
 <body>
@@ -252,7 +241,7 @@
         
         <div class="upload-card">
             <div class="tip-box">
-                <strong>💡 AI Tip:</strong> Add tags and descriptions to help AI tools understand your images. Tags are stored as metadata and can be retrieved via the API.
+                <strong>💡 Tip:</strong> Large images are automatically compressed. Add tags and descriptions to help AI tools understand your images.
             </div>
             
             <div class="form-group">
@@ -264,6 +253,18 @@
                     <option value="photos">photos - General photos</option>
                     <option value="assets">assets - Misc resources</option>
                 </select>
+            </div>
+
+            <div class="form-group">
+                <label>🖼️ Image Quality</label>
+                <div class="quality-select">
+                    <select id="qualitySelect">
+                        <option value="0.9">High (90%)</option>
+                        <option value="0.8" selected>Medium (80%) - Recommended</option>
+                        <option value="0.6">Low (60%) - Faster uploads</option>
+                    </select>
+                    <span class="size-info">Max ~4MB</span>
+                </div>
             </div>
             
             <div class="drop-zone" id="dropZone">
@@ -293,6 +294,9 @@
     </div>
 
     <script>
+        const MAX_SIZE = 4 * 1024 * 1024; // 4MB max for Vercel
+        const MAX_DIMENSION = 2048; // Max width/height
+        
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const previewContainer = document.getElementById('previewContainer');
@@ -303,6 +307,7 @@
         const progressFill = document.getElementById('progressFill');
         const uploadedUrls = document.getElementById('uploadedUrls');
         const folderSelect = document.getElementById('folderSelect');
+        const qualitySelect = document.getElementById('qualitySelect');
         
         let filesToUpload = [];
         
@@ -327,55 +332,122 @@
             handleFiles(e.target.files);
         });
         
-        function handleFiles(files) {
+        async function handleFiles(files) {
             for (const file of files) {
                 if (file.type.startsWith('image/')) {
+                    showStatus('uploading', `Processing ${file.name}...`);
+                    
                     const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                    const ext = file.name.split('.').pop();
+                    const ext = file.name.split('.').pop().toLowerCase();
                     const baseName = file.name.replace(/\.[^/.]+$/, '');
+                    
+                    // Compress image
+                    const quality = parseFloat(qualitySelect.value);
+                    const compressed = await compressImage(file, quality);
                     
                     filesToUpload.push({
                         id,
-                        file,
+                        file: compressed.blob,
                         originalName: file.name,
-                        newName: baseName,
-                        extension: ext,
+                        originalSize: file.size,
+                        compressedSize: compressed.blob.size,
+                        newName: sanitizeFilename(baseName),
+                        extension: ext === 'png' && compressed.convertedToJpg ? 'jpg' : ext,
                         tags: '',
-                        description: ''
+                        description: '',
+                        previewUrl: compressed.dataUrl
                     });
+                    
                     addPreview(filesToUpload[filesToUpload.length - 1]);
                 }
             }
+            status.className = 'status';
             updateUploadButton();
         }
         
+        function sanitizeFilename(name) {
+            return name.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').toLowerCase();
+        }
+        
+        async function compressImage(file, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    // Resize if too large
+                    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+                        if (width > height) {
+                            height = Math.round((height * MAX_DIMENSION) / width);
+                            width = MAX_DIMENSION;
+                        } else {
+                            width = Math.round((width * MAX_DIMENSION) / height);
+                            height = MAX_DIMENSION;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Convert to JPEG for better compression (unless it's a PNG with transparency we need to keep)
+                    const outputType = 'image/jpeg';
+                    const dataUrl = canvas.toDataURL(outputType, quality);
+                    
+                    // Convert data URL to blob
+                    fetch(dataUrl)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            resolve({
+                                blob,
+                                dataUrl,
+                                convertedToJpg: file.type !== 'image/jpeg'
+                            });
+                        });
+                };
+                
+                img.src = URL.createObjectURL(file);
+            });
+        }
+        
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+        
         function addPreview(fileObj) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const div = document.createElement('div');
-                div.className = 'preview-item';
-                div.id = `preview-${fileObj.id}`;
-                div.innerHTML = `
-                    <img src="${e.target.result}" alt="${fileObj.originalName}">
-                    <div class="details">
-                        <div class="original-name">Original: ${fileObj.originalName}</div>
-                        <input type="text" class="filename-input" placeholder="Filename (without extension)" value="${fileObj.newName}" data-id="${fileObj.id}" onchange="updateFileName(this)">
-                        <input type="text" class="tags-input" placeholder="Tags (comma separated: burger, food, restaurant)" data-id="${fileObj.id}" onchange="updateTags(this)">
-                        <input type="text" class="desc-input" placeholder="Description for AI (e.g., 'A juicy burger with cheese')" data-id="${fileObj.id}" onchange="updateDesc(this)">
-                    </div>
-                    <button class="remove" onclick="removeFile('${fileObj.id}')">✕</button>
-                `;
-                previewContainer.appendChild(div);
-            };
-            reader.readAsDataURL(fileObj.file);
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.id = `preview-${fileObj.id}`;
+            
+            const savedPercent = Math.round((1 - fileObj.compressedSize / fileObj.originalSize) * 100);
+            const sizeInfo = savedPercent > 0 
+                ? `${formatSize(fileObj.originalSize)} → <span class="compressed">${formatSize(fileObj.compressedSize)} (${savedPercent}% smaller)</span>`
+                : `${formatSize(fileObj.compressedSize)}`;
+            
+            div.innerHTML = `
+                <img src="${fileObj.previewUrl}" alt="${fileObj.originalName}">
+                <div class="details">
+                    <div class="file-info">${fileObj.originalName} • ${sizeInfo}</div>
+                    <input type="text" class="filename-input" placeholder="Filename (without extension)" value="${fileObj.newName}" data-id="${fileObj.id}" onchange="updateFileName(this)">
+                    <input type="text" class="tags-input" placeholder="Tags: burger, food, restaurant" data-id="${fileObj.id}" onchange="updateTags(this)">
+                    <input type="text" class="desc-input" placeholder="Description: A juicy burger with cheese" data-id="${fileObj.id}" onchange="updateDesc(this)">
+                </div>
+                <button class="remove" onclick="removeFile('${fileObj.id}')">✕</button>
+            `;
+            previewContainer.appendChild(div);
         }
         
         function updateFileName(input) {
             const id = input.dataset.id;
             const fileObj = filesToUpload.find(f => f.id === id);
             if (fileObj) {
-                // Sanitize filename: remove special chars, replace spaces with hyphens
-                fileObj.newName = input.value.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-');
+                fileObj.newName = sanitizeFilename(input.value);
                 input.value = fileObj.newName;
             }
         }
@@ -419,7 +491,7 @@
                 progressFill.style.width = `${(uploaded / total) * 100}%`;
                 
                 try {
-                    const base64 = await fileToBase64(fileObj.file);
+                    const base64 = await blobToBase64(fileObj.file);
                     
                     const response = await fetch('/api/upload', {
                         method: 'POST',
@@ -433,7 +505,13 @@
                         })
                     });
                     
-                    const data = await response.json();
+                    let data;
+                    const text = await response.text();
+                    try {
+                        data = JSON.parse(text);
+                    } catch (e) {
+                        throw new Error(`Server error: ${text.substring(0, 100)}`);
+                    }
                     
                     if (!response.ok) {
                         throw new Error(data.error || 'Upload failed');
@@ -458,12 +536,12 @@
             updateUploadButton();
         }
         
-        function fileToBase64(file) {
+        function blobToBase64(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = () => resolve(reader.result.split(',')[1]);
                 reader.onerror = reject;
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(blob);
             });
         }
         
