@@ -21,12 +21,33 @@
             max-width: 800px;
             margin: 0 auto;
         }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
         h1 {
             font-size: 2.5rem;
-            margin-bottom: 10px;
             background: linear-gradient(90deg, #00d4ff, #7b2cbf);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+        .upload-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .upload-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,212,255,0.3);
         }
         .subtitle {
             color: #888;
@@ -94,7 +115,10 @@
 </head>
 <body>
     <div class="container">
-        <h1>📸 Image Assets</h1>
+        <div class="header">
+            <h1>📸 Image Assets</h1>
+            <a href="/upload.html" class="upload-link">📤 Upload Images</a>
+        </div>
         <p class="subtitle">Public image hosting for AI generation & projects</p>
         
         <div class="folders">
