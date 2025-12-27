@@ -228,58 +228,24 @@
             width: 0%;
             transition: width 0.3s ease;
         }
-        .token-section {
-            margin-bottom: 20px;
-            padding: 16px;
-            background: rgba(255,165,0,0.1);
-            border: 1px solid rgba(255,165,0,0.3);
-            border-radius: 8px;
-        }
-        .token-section label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ffaa00;
-            font-size: 0.85rem;
-        }
-        .token-section input {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 6px;
-            border: 1px solid rgba(255,255,255,0.2);
-            background: rgba(0,0,0,0.3);
-            color: #fff;
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-        .token-section input:focus {
-            outline: none;
-            border-color: #ffaa00;
-        }
-        .token-section small {
-            display: block;
-            margin-top: 6px;
-            color: #888;
+        .ready-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: rgba(0,255,100,0.2);
+            border: 1px solid rgba(0,255,100,0.4);
+            border-radius: 20px;
             font-size: 0.75rem;
-        }
-        .token-saved {
             color: #00ff64;
-            font-size: 0.8rem;
-            margin-left: 8px;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📤 Image Uploader</h1>
-        <p class="subtitle">Upload images directly to your hosting</p>
+        <h1>📤 Image Uploader <span class="ready-badge">✓ Ready</span></h1>
+        <p class="subtitle">Drag & drop images to upload instantly</p>
         
         <div class="upload-card">
-            <div class="token-section">
-                <label>🔑 GitHub Token <span class="token-saved" id="tokenSaved" style="display:none;">✓ Saved</span></label>
-                <input type="password" id="githubToken" placeholder="ghp_xxxx or github_pat_xxxx">
-                <small>Your token is stored locally in your browser only. Never shared.</small>
-            </div>
-            
             <div class="folder-select">
                 <label>📁 Upload to folder</label>
                 <select id="folderSelect">
@@ -318,10 +284,6 @@
     </div>
 
     <script>
-        const REPO_OWNER = 'justinnewbold';
-        const REPO_NAME = 'images';
-        const BASE_URL = 'https://images.newbold.cloud';
-        
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const previewContainer = document.getElementById('previewContainer');
@@ -332,28 +294,8 @@
         const progressFill = document.getElementById('progressFill');
         const uploadedUrls = document.getElementById('uploadedUrls');
         const folderSelect = document.getElementById('folderSelect');
-        const githubToken = document.getElementById('githubToken');
-        const tokenSaved = document.getElementById('tokenSaved');
         
         let filesToUpload = [];
-        
-        // Load saved token
-        const savedToken = localStorage.getItem('github_upload_token');
-        if (savedToken) {
-            githubToken.value = savedToken;
-            tokenSaved.style.display = 'inline';
-        }
-        
-        // Save token on change
-        githubToken.addEventListener('input', () => {
-            if (githubToken.value.length > 10) {
-                localStorage.setItem('github_upload_token', githubToken.value);
-                tokenSaved.style.display = 'inline';
-            } else {
-                tokenSaved.style.display = 'none';
-            }
-            updateUploadButton();
-        });
         
         // Drag and drop
         dropZone.addEventListener('click', () => fileInput.click());
@@ -409,18 +351,12 @@
         }
         
         function updateUploadButton() {
-            uploadBtn.disabled = filesToUpload.length === 0 || githubToken.value.length < 10;
+            uploadBtn.disabled = filesToUpload.length === 0;
         }
         
         uploadBtn.addEventListener('click', uploadFiles);
         
         async function uploadFiles() {
-            const token = githubToken.value.trim();
-            if (!token) {
-                showStatus('error', 'Please enter your GitHub token');
-                return;
-            }
-            
             const folder = folderSelect.value;
             uploadBtn.disabled = true;
             uploadedUrls.innerHTML = '';
@@ -435,31 +371,26 @@
                 
                 try {
                     const base64 = await fileToBase64(file);
-                    const path = `public/${folder}/${file.name}`;
                     
-                    const response = await fetch(
-                        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`,
-                        {
-                            method: 'PUT',
-                            headers: {
-                                'Authorization': `token ${token}`,
-                                'Accept': 'application/vnd.github.v3+json',
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                message: `Upload ${file.name}`,
-                                content: base64
-                            })
-                        }
-                    );
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            filename: file.name,
+                            content: base64,
+                            folder: folder
+                        })
+                    });
+                    
+                    const data = await response.json();
                     
                     if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.message || 'Upload failed');
+                        throw new Error(data.error || 'Upload failed');
                     }
                     
-                    const url = `${BASE_URL}/${folder}/${file.name}`;
-                    addUploadedUrl(url, file.name);
+                    addUploadedUrl(data.url, file.name);
                     uploaded++;
                     progressFill.style.width = `${(uploaded / total) * 100}%`;
                     
