@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Uploader - newbold.cloud</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+        }
+        .upload-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+        }
+        .folder-select {
+            margin-bottom: 20px;
+        }
+        .folder-select label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+        .folder-select select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        .folder-select select:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .drop-zone {
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .drop-zone-icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+        .drop-zone-text {
+            color: #888;
+        }
+        .drop-zone-text span {
+            color: #00d4ff;
+            text-decoration: underline;
+        }
+        #fileInput {
+            display: none;
+        }
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(0,0,0,0.3);
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .preview-item .remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255,0,0,0.8);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .preview-item .filename {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4px;
+            background: rgba(0,0,0,0.7);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .upload-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .upload-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            display: block;
+            background: rgba(0,255,100,0.1);
+            border: 1px solid rgba(0,255,100,0.3);
+        }
+        .status.error {
+            display: block;
+            background: rgba(255,0,0,0.1);
+            border: 1px solid rgba(255,0,0,0.3);
+        }
+        .status.uploading {
+            display: block;
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+        }
+        .uploaded-urls {
+            margin-top: 20px;
+        }
+        .uploaded-url {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .uploaded-url input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00d4ff;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .uploaded-url button {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .uploaded-url button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #888;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            color: #00d4ff;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .token-section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255,165,0,0.1);
+            border: 1px solid rgba(255,165,0,0.3);
+            border-radius: 8px;
+        }
+        .token-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ffaa00;
+            font-size: 0.85rem;
+        }
+        .token-section input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        .token-section input:focus {
+            outline: none;
+            border-color: #ffaa00;
+        }
+        .token-section small {
+            display: block;
+            margin-top: 6px;
+            color: #888;
+            font-size: 0.75rem;
+        }
+        .token-saved {
+            color: #00ff64;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📤 Image Uploader</h1>
+        <p class="subtitle">Upload images directly to your hosting</p>
+        
+        <div class="upload-card">
+            <div class="token-section">
+                <label>🔑 GitHub Token <span class="token-saved" id="tokenSaved" style="display:none;">✓ Saved</span></label>
+                <input type="password" id="githubToken" placeholder="ghp_xxxx or github_pat_xxxx">
+                <small>Your token is stored locally in your browser only. Never shared.</small>
+            </div>
+            
+            <div class="folder-select">
+                <label>📁 Upload to folder</label>
+                <select id="folderSelect">
+                    <option value="references">references - AI reference images</option>
+                    <option value="logos">logos - Brand logos & icons</option>
+                    <option value="textures">textures - Textures & patterns</option>
+                    <option value="photos">photos - General photos</option>
+                    <option value="assets">assets - Misc resources</option>
+                </select>
+            </div>
+            
+            <div class="drop-zone" id="dropZone">
+                <div class="drop-zone-icon">🖼️</div>
+                <p class="drop-zone-text">
+                    Drag & drop images here<br>
+                    or <span>click to browse</span>
+                </p>
+            </div>
+            <input type="file" id="fileInput" multiple accept="image/*">
+            
+            <div class="preview-container" id="previewContainer"></div>
+            
+            <button class="upload-btn" id="uploadBtn" disabled>Upload Images</button>
+            
+            <div class="status" id="status">
+                <span id="statusText"></span>
+                <div class="progress-bar" id="progressBar" style="display:none;">
+                    <div class="progress-bar-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <div class="uploaded-urls" id="uploadedUrls"></div>
+        </div>
+        
+        <a href="/" class="back-link">← Back to Image Assets</a>
+    </div>
+
+    <script>
+        const REPO_OWNER = 'justinnewbold';
+        const REPO_NAME = 'images';
+        const BASE_URL = 'https://images.newbold.cloud';
+        
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const status = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const uploadedUrls = document.getElementById('uploadedUrls');
+        const folderSelect = document.getElementById('folderSelect');
+        const githubToken = document.getElementById('githubToken');
+        const tokenSaved = document.getElementById('tokenSaved');
+        
+        let filesToUpload = [];
+        
+        // Load saved token
+        const savedToken = localStorage.getItem('github_upload_token');
+        if (savedToken) {
+            githubToken.value = savedToken;
+            tokenSaved.style.display = 'inline';
+        }
+        
+        // Save token on change
+        githubToken.addEventListener('input', () => {
+            if (githubToken.value.length > 10) {
+                localStorage.setItem('github_upload_token', githubToken.value);
+                tokenSaved.style.display = 'inline';
+            } else {
+                tokenSaved.style.display = 'none';
+            }
+            updateUploadButton();
+        });
+        
+        // Drag and drop
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        function handleFiles(files) {
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    filesToUpload.push(file);
+                    addPreview(file);
+                }
+            }
+            updateUploadButton();
+        }
+        
+        function addPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="${file.name}">
+                    <button class="remove" onclick="removeFile('${file.name}', this)">×</button>
+                    <div class="filename">${file.name}</div>
+                `;
+                previewContainer.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function removeFile(filename, btn) {
+            filesToUpload = filesToUpload.filter(f => f.name !== filename);
+            btn.parentElement.remove();
+            updateUploadButton();
+        }
+        
+        function updateUploadButton() {
+            uploadBtn.disabled = filesToUpload.length === 0 || githubToken.value.length < 10;
+        }
+        
+        uploadBtn.addEventListener('click', uploadFiles);
+        
+        async function uploadFiles() {
+            const token = githubToken.value.trim();
+            if (!token) {
+                showStatus('error', 'Please enter your GitHub token');
+                return;
+            }
+            
+            const folder = folderSelect.value;
+            uploadBtn.disabled = true;
+            uploadedUrls.innerHTML = '';
+            progressBar.style.display = 'block';
+            
+            let uploaded = 0;
+            const total = filesToUpload.length;
+            
+            for (const file of filesToUpload) {
+                showStatus('uploading', `Uploading ${file.name}... (${uploaded + 1}/${total})`);
+                progressFill.style.width = `${(uploaded / total) * 100}%`;
+                
+                try {
+                    const base64 = await fileToBase64(file);
+                    const path = `public/${folder}/${file.name}`;
+                    
+                    const response = await fetch(
+                        `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}`,
+                        {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `token ${token}`,
+                                'Accept': 'application/vnd.github.v3+json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: `Upload ${file.name}`,
+                                content: base64
+                            })
+                        }
+                    );
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || 'Upload failed');
+                    }
+                    
+                    const url = `${BASE_URL}/${folder}/${file.name}`;
+                    addUploadedUrl(url, file.name);
+                    uploaded++;
+                    progressFill.style.width = `${(uploaded / total) * 100}%`;
+                    
+                } catch (err) {
+                    showStatus('error', `Error uploading ${file.name}: ${err.message}`);
+                    uploadBtn.disabled = false;
+                    return;
+                }
+            }
+            
+            showStatus('success', `✅ Successfully uploaded ${uploaded} image${uploaded > 1 ? 's' : ''}!`);
+            filesToUpload = [];
+            previewContainer.innerHTML = '';
+            fileInput.value = '';
+            progressBar.style.display = 'none';
+            updateUploadButton();
+        }
+        
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64 = reader.result.split(',')[1];
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        function showStatus(type, message) {
+            status.className = `status ${type}`;
+            statusText.textContent = message;
+        }
+        
+        function addUploadedUrl(url, filename) {
+            const div = document.createElement('div');
+            div.className = 'uploaded-url';
+            div.innerHTML = `
+                <input type="text" value="${url}" readonly onclick="this.select()">
+                <button onclick="copyUrl(this, '${url}')">Copy</button>
+            `;
+            uploadedUrls.appendChild(div);
+        }
+        
+        function copyUrl(btn, url) {
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>
