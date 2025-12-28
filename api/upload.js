@@ -6,6 +6,10 @@ export const config = {
   },
 };
 
+// Supported file types
+const SUPPORTED_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg|pdf|mp4|mov|webm|mp3|wav)$/i;
+const IMAGE_EXTENSIONS = /\.(jpg|jpeg|png|gif|webp|svg)$/i;
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,7 +20,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // GET request returns metadata for all images
+  // GET request returns metadata for all files
   if (req.method === 'GET') {
     try {
       const token = process.env.GITHUB_TOKEN;
@@ -35,26 +39,27 @@ export default async function handler(req, res) {
       );
 
       if (!response.ok) {
-        return res.status(response.status).json({ error: 'Failed to fetch images' });
+        return res.status(response.status).json({ error: 'Failed to fetch files' });
       }
 
       const files = await response.json();
       
-      // Filter for images only and format response
-      const images = files
-        .filter(f => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name))
+      // Filter for supported file types and format response
+      const items = files
+        .filter(f => SUPPORTED_EXTENSIONS.test(f.name))
         .map(f => ({
           name: f.name,
           url: `https://images.newbold.cloud/${folder}/${f.name}`,
           raw_url: f.download_url,
           size: f.size,
-          sha: f.sha
+          sha: f.sha,
+          type: getFileType(f.name)
         }));
 
       return res.status(200).json({ 
         folder,
-        count: images.length,
-        images 
+        count: items.length,
+        files: items 
       });
 
     } catch (error) {
@@ -73,12 +78,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields: filename, content, folder' });
     }
 
+    // Validate file type
+    if (!SUPPORTED_EXTENSIONS.test(filename)) {
+      return res.status(400).json({ 
+        error: 'Unsupported file type. Allowed: jpg, png, gif, webp, svg, pdf, mp4, mov, webm, mp3, wav' 
+      });
+    }
+
     const token = process.env.GITHUB_TOKEN;
     const owner = 'justinnewbold';
     const repo = 'images';
     const path = `public/${folder}/${filename}`;
 
-    // Upload the image
+    // Upload the file
     const response = await fetch(
       `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
       {
@@ -101,7 +113,7 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: data.message || 'Upload failed' });
     }
 
-    const imageUrl = `https://images.newbold.cloud/${folder}/${filename}`;
+    const fileUrl = `https://images.newbold.cloud/${folder}/${filename}`;
     
     // If tags or description provided, update the metadata JSON
     if (tags || description) {
@@ -110,9 +122,10 @@ export default async function handler(req, res) {
     
     return res.status(200).json({ 
       success: true, 
-      url: imageUrl,
+      url: fileUrl,
       filename,
       folder,
+      type: getFileType(filename),
       tags: tags || null,
       description: description || null,
       commit: data.commit?.html_url 
@@ -121,6 +134,15 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
+}
+
+function getFileType(filename) {
+  const ext = filename.split('.').pop().toLowerCase();
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'image';
+  if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
+  if (['mp3', 'wav'].includes(ext)) return 'audio';
+  if (ext === 'pdf') return 'pdf';
+  return 'file';
 }
 
 async function updateMetadata(token, owner, repo, folder, filename, metadata) {
@@ -147,7 +169,7 @@ async function updateMetadata(token, owner, repo, folder, filename, metadata) {
       existingMetadata = JSON.parse(Buffer.from(data.content, 'base64').toString('utf8'));
     }
 
-    // Add new image metadata
+    // Add new file metadata
     existingMetadata[filename] = metadata;
 
     // Save updated metadata
