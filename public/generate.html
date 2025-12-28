@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Generate Catalog - newbold.cloud</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 { color: #00d4ff; }
+        .btn {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            border: none;
+            color: #fff;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 10px 5px 10px 0;
+        }
+        pre {
+            background: rgba(0,0,0,0.4);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            max-height: 500px;
+            font-size: 0.85rem;
+        }
+        .status { color: #4ade80; margin: 20px 0; }
+        .info { color: #888; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>📊 Catalog Generator</h1>
+    <p class="info">Generate machine-readable image catalogs for AI crawlers and training datasets</p>
+    
+    <button class="btn" onclick="generateCatalog()">Generate catalog.json</button>
+    <button class="btn" onclick="generateSitemap()">Generate sitemap.xml</button>
+    <button class="btn" onclick="generateLAION()">Generate LAION Format</button>
+    
+    <p class="status" id="status"></p>
+    
+    <h3 style="margin-top:30px;">Output:</h3>
+    <pre id="output">Click a button to generate...</pre>
+    
+    <script>
+        const REPO_OWNER = 'justinnewbold';
+        const REPO_NAME = 'images';
+        const BASE_URL = 'https://images.newbold.cloud';
+        const FOLDERS = ['references', 'logos', 'textures', 'photos', 'assets'];
+        
+        async function getAllImages() {
+            const allImages = [];
+            
+            for (const folder of FOLDERS) {
+                try {
+                    const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/public/${folder}`);
+                    if (!res.ok) continue;
+                    const files = await res.json();
+                    
+                    const images = files.filter(f => 
+                        /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name) && f.type === 'file'
+                    );
+                    
+                    for (const img of images) {
+                        const name = img.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+                        allImages.push({
+                            url: `${BASE_URL}/${folder}/${img.name}`,
+                            filename: img.name,
+                            folder: folder,
+                            caption: `${name} - ${folder} image for AI generation`,
+                            alt: name,
+                            tags: [folder, img.name.split('.').pop(), 'public-domain', 'ai-training'],
+                            size: img.size,
+                            sha: img.sha,
+                            license: 'CC0-1.0',
+                            license_url: 'https://creativecommons.org/publicdomain/zero/1.0/'
+                        });
+                    }
+                } catch (e) {
+                    console.error(`Error loading ${folder}:`, e);
+                }
+            }
+            
+            return allImages;
+        }
+        
+        async function generateCatalog() {
+            document.getElementById('status').textContent = 'Loading images...';
+            const images = await getAllImages();
+            
+            const catalog = {
+                "@context": "https://schema.org",
+                "@type": "Dataset",
+                "name": "newbold.cloud Image Dataset",
+                "description": "Public domain images with metadata for AI training and image generation",
+                "url": "https://images.newbold.cloud",
+                "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+                "dateModified": new Date().toISOString(),
+                "creator": {
+                    "@type": "Person",
+                    "name": "Justin Newbold"
+                },
+                "totalImages": images.length,
+                "categories": FOLDERS,
+                "images": images.map(img => ({
+                    "@type": "ImageObject",
+                    "contentUrl": img.url,
+                    "name": img.filename,
+                    "description": img.caption,
+                    "caption": img.caption,
+                    "keywords": img.tags.join(', '),
+                    "encodingFormat": `image/${img.filename.split('.').pop()}`,
+                    "contentSize": img.size,
+                    "license": img.license_url,
+                    "acquireLicensePage": "https://images.newbold.cloud/license"
+                }))
+            };
+            
+            document.getElementById('status').textContent = `✓ Generated catalog with ${images.length} images`;
+            document.getElementById('output').textContent = JSON.stringify(catalog, null, 2);
+        }
+        
+        async function generateSitemap() {
+            document.getElementById('status').textContent = 'Loading images...';
+            const images = await getAllImages();
+            
+            let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+    <url>
+        <loc>https://images.newbold.cloud/</loc>
+        <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+`;
+            
+            for (const img of images) {
+                sitemap += `    <url>
+        <loc>${img.url}</loc>
+        <image:image>
+            <image:loc>${img.url}</image:loc>
+            <image:caption>${img.caption}</image:caption>
+            <image:title>${img.alt}</image:title>
+            <image:license>https://creativecommons.org/publicdomain/zero/1.0/</image:license>
+        </image:image>
+    </url>
+`;
+            }
+            
+            sitemap += '</urlset>';
+            
+            document.getElementById('status').textContent = `✓ Generated sitemap with ${images.length} images`;
+            document.getElementById('output').textContent = sitemap;
+        }
+        
+        async function generateLAION() {
+            document.getElementById('status').textContent = 'Loading images...';
+            const images = await getAllImages();
+            
+            // LAION-5B style format (JSONL - one JSON object per line)
+            const laion = images.map(img => JSON.stringify({
+                url: img.url,
+                caption: img.caption,
+                width: null, // Would need actual dimensions
+                height: null,
+                license: img.license,
+                nsfw: "UNLIKELY",
+                similarity: 1.0,
+                original_width: null,
+                original_height: null
+            })).join('\n');
+            
+            document.getElementById('status').textContent = `✓ Generated LAION format with ${images.length} entries`;
+            document.getElementById('output').textContent = laion;
+        }
+    </script>
+</body>
+</html>
