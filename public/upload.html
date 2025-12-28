@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Uploader - newbold.cloud</title>
-    <meta name="description" content="Upload and host images for AI image generation">
+    <title>Upload - newbold.cloud</title>
+    <meta name="description" content="Upload images, PDFs, and videos for AI workflows">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -54,11 +54,17 @@
             color: #aaa;
         }
         .tip-box strong { color: #00d4ff; }
-        .tip-box kbd {
-            background: rgba(0,0,0,0.3);
-            padding: 2px 6px;
+        .supported-types {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .supported-types span {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 8px;
             border-radius: 4px;
-            font-family: monospace;
+            font-size: 0.75rem;
         }
         .form-row {
             display: flex;
@@ -80,10 +86,6 @@
             background: rgba(0,0,0,0.3);
             color: #fff;
             font-size: 1rem;
-        }
-        .form-group select:focus, .form-group input:focus {
-            outline: none;
-            border-color: #00d4ff;
         }
         .folder-row {
             display: flex;
@@ -108,18 +110,14 @@
             transition: all 0.3s ease;
             margin-bottom: 20px;
         }
-        .drop-zone:hover, .drop-zone.dragover, .drop-zone.paste-ready {
+        .drop-zone:hover, .drop-zone.dragover {
             border-color: #00d4ff;
             background: rgba(0,212,255,0.1);
         }
         .drop-zone-icon { font-size: 3rem; margin-bottom: 12px; }
         .drop-zone-text { color: #888; }
         .drop-zone-text span { color: #00d4ff; }
-        .drop-zone-hint {
-            margin-top: 12px;
-            font-size: 0.85rem;
-            color: #666;
-        }
+        .drop-zone-hint { margin-top: 12px; font-size: 0.85rem; color: #666; }
         #fileInput { display: none; }
         .preview-container {
             display: flex;
@@ -135,12 +133,22 @@
             border-radius: 12px;
             align-items: flex-start;
         }
-        .preview-item img {
+        .preview-item .thumb {
             width: 80px;
             height: 80px;
-            object-fit: cover;
             border-radius: 8px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            font-size: 2rem;
+            overflow: hidden;
+        }
+        .preview-item .thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
         .preview-item .details { flex: 1; }
         .preview-item input {
@@ -159,6 +167,13 @@
             margin-bottom: 8px;
         }
         .preview-item .file-info .compressed { color: #00ff64; }
+        .preview-item .file-info .type-badge {
+            background: rgba(123,44,191,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #b388ff;
+            margin-left: 8px;
+        }
         .preview-item .remove {
             padding: 8px 12px;
             background: rgba(255,0,0,0.3);
@@ -177,9 +192,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
         }
-        .upload-btn:hover:not(:disabled) { transform: translateY(-2px); }
         .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .status {
             margin-top: 20px;
@@ -231,13 +244,13 @@
             border-radius: 4px;
             color: #00d4ff;
             cursor: pointer;
-            font-size: 0.8rem;
         }
-        .uploaded-item .copy-formats {
+        .uploaded-item .action-row {
             display: flex;
             gap: 6px;
+            flex-wrap: wrap;
         }
-        .uploaded-item .copy-formats button {
+        .uploaded-item .action-row button {
             padding: 4px 10px;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -246,7 +259,7 @@
             cursor: pointer;
             font-size: 0.75rem;
         }
-        .uploaded-item .copy-formats button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .uploaded-item .action-row button:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .modal {
             display: none;
             position: fixed;
@@ -263,6 +276,7 @@
             padding: 24px;
             max-width: 400px;
             width: 90%;
+            text-align: center;
         }
         .modal-content h3 { margin-bottom: 16px; }
         .modal-content input {
@@ -273,6 +287,12 @@
             background: rgba(0,0,0,0.3);
             color: #fff;
             margin-bottom: 16px;
+        }
+        .modal-content img {
+            max-width: 200px;
+            margin: 16px auto;
+            border-radius: 8px;
+            background: #fff;
         }
         .modal-buttons { display: flex; gap: 10px; }
         .modal-buttons button {
@@ -289,7 +309,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📤 Image Uploader</h1>
+            <h1>📤 Upload Files</h1>
             <div class="header-links">
                 <a href="/gallery.html">🖼️ Gallery</a>
                 <a href="/">🏠 Home</a>
@@ -298,9 +318,11 @@
         
         <div class="upload-card">
             <div class="tip-box">
-                <strong>💡 Pro Tips:</strong> 
-                Paste screenshots with <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> anywhere on this page!
-                Large images auto-compress. Add tags to help AI tools find your images.
+                <strong>💡 Supported Files:</strong> Images auto-compress. Paste screenshots with Ctrl+V.
+                <div class="supported-types">
+                    <span>📷 JPG</span><span>📷 PNG</span><span>📷 GIF</span><span>📷 WebP</span><span>📷 SVG</span>
+                    <span>📄 PDF</span><span>🎬 MP4</span><span>🎬 MOV</span><span>🎬 WebM</span><span>🎵 MP3</span>
+                </div>
             </div>
             
             <div class="form-row">
@@ -308,11 +330,12 @@
                     <label>📁 Folder</label>
                     <div class="folder-row">
                         <select id="folderSelect"></select>
-                        <button onclick="showNewFolderModal()" title="Create new folder">➕</button>
+                        <button onclick="showNewFolderModal()" title="New folder">➕</button>
+                        <button onclick="downloadFolder()" title="Download ZIP">📦</button>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>🖼️ Quality</label>
+                    <label>🖼️ Image Quality</label>
                     <select id="qualitySelect">
                         <option value="0.9">High (90%)</option>
                         <option value="0.8" selected>Medium (80%)</option>
@@ -322,17 +345,14 @@
             </div>
             
             <div class="drop-zone" id="dropZone">
-                <div class="drop-zone-icon">🖼️</div>
-                <p class="drop-zone-text">
-                    Drag & drop images or <span>click to browse</span>
-                </p>
-                <p class="drop-zone-hint">Or paste from clipboard (Ctrl+V / Cmd+V)</p>
+                <div class="drop-zone-icon">📁</div>
+                <p class="drop-zone-text">Drag & drop files or <span>click to browse</span></p>
+                <p class="drop-zone-hint">Images, PDFs, Videos • Paste with Ctrl+V</p>
             </div>
-            <input type="file" id="fileInput" multiple accept="image/*">
+            <input type="file" id="fileInput" multiple accept="image/*,video/*,audio/*,.pdf">
             
             <div class="preview-container" id="previewContainer"></div>
-            
-            <button class="upload-btn" id="uploadBtn" disabled>Upload Images</button>
+            <button class="upload-btn" id="uploadBtn" disabled>Upload Files</button>
             
             <div class="status" id="status">
                 <span id="statusText"></span>
@@ -340,27 +360,39 @@
                     <div class="progress-bar-fill" id="progressFill"></div>
                 </div>
             </div>
-            
             <div class="uploaded-urls" id="uploadedUrls"></div>
         </div>
     </div>
 
-    <!-- New Folder Modal -->
     <div class="modal" id="newFolderModal">
         <div class="modal-content">
             <h3>📁 Create New Folder</h3>
             <input type="text" id="newFolderName" placeholder="folder-name">
             <div class="modal-buttons">
-                <button class="cancel" onclick="closeNewFolderModal()">Cancel</button>
+                <button class="cancel" onclick="closeModal('newFolderModal')">Cancel</button>
                 <button class="create" onclick="createFolder()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="qrModal">
+        <div class="modal-content">
+            <h3>📱 QR Code</h3>
+            <img id="qrImage" src="" alt="QR Code">
+            <p style="color: #888; font-size: 0.85rem; margin-bottom: 16px;">Scan to open on mobile</p>
+            <div class="modal-buttons">
+                <button class="cancel" onclick="closeModal('qrModal')">Close</button>
+                <button class="create" onclick="downloadQr()">Download</button>
             </div>
         </div>
     </div>
 
     <script>
         const MAX_DIMENSION = 2048;
+        const MAX_FILE_SIZE = 45 * 1024 * 1024;
         let filesToUpload = [];
         let folders = ['references', 'logos', 'textures', 'photos', 'assets'];
+        let currentQrUrl = '';
 
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -374,85 +406,81 @@
         const folderSelect = document.getElementById('folderSelect');
         const qualitySelect = document.getElementById('qualitySelect');
 
-        // Load folders from API
         async function loadFolders() {
             try {
                 const response = await fetch('/api/folders');
                 const data = await response.json();
                 if (data.folders) {
-                    folders = data.folders.filter(f => f !== 'index.html' && !f.endsWith('.html'));
+                    folders = data.folders.filter(f => !f.includes('.'));
                 }
-            } catch (e) {
-                console.log('Using default folders');
-            }
-            renderFolderSelect();
+            } catch (e) {}
+            folderSelect.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join('');
         }
 
-        function renderFolderSelect() {
-            folderSelect.innerHTML = folders.map(f => 
-                `<option value="${f}">${f}</option>`
-            ).join('');
-        }
-
-        // Drag and drop
         dropZone.addEventListener('click', () => fileInput.click());
         dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
         dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            handleFiles(e.dataTransfer.files);
-        });
+        dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-        // PASTE SUPPORT
         document.addEventListener('paste', async (e) => {
             const items = e.clipboardData?.items;
             if (!items) return;
-
             for (const item of items) {
                 if (item.type.startsWith('image/')) {
                     e.preventDefault();
                     const file = item.getAsFile();
-                    if (file) {
-                        dropZone.classList.add('paste-ready');
-                        setTimeout(() => dropZone.classList.remove('paste-ready'), 500);
-                        await handleFiles([file]);
-                    }
+                    if (file) handleFiles([file]);
                 }
             }
         });
 
         async function handleFiles(files) {
             for (const file of files) {
-                if (file.type.startsWith('image/')) {
-                    showStatus('uploading', `Processing ${file.name}...`);
-                    
-                    const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-                    const baseName = file.name.replace(/\.[^/.]+$/, '') || `image-${Date.now()}`;
-                    
+                const ext = file.name.split('.').pop()?.toLowerCase() || '';
+                const isImage = file.type.startsWith('image/');
+                const isVideo = file.type.startsWith('video/');
+                const isAudio = file.type.startsWith('audio/');
+                const isPdf = ext === 'pdf';
+                
+                if (!isImage && !isVideo && !isAudio && !isPdf) {
+                    showStatus('error', `Unsupported: ${file.name}`);
+                    continue;
+                }
+                if (file.size > MAX_FILE_SIZE) {
+                    showStatus('error', `Too large (max 45MB): ${file.name}`);
+                    continue;
+                }
+
+                const id = Date.now() + Math.random().toString(36).substr(2, 9);
+                const baseName = file.name.replace(/\.[^/.]+$/, '') || `file-${Date.now()}`;
+                
+                let fileData, previewUrl, finalExt;
+                
+                if (isImage) {
                     const quality = parseFloat(qualitySelect.value);
                     const compressed = await compressImage(file, quality);
-                    
-                    filesToUpload.push({
-                        id,
-                        file: compressed.blob,
-                        originalName: file.name,
-                        originalSize: file.size,
-                        compressedSize: compressed.blob.size,
-                        newName: sanitizeFilename(baseName),
-                        extension: compressed.convertedToJpg ? 'jpg' : (ext === 'jpeg' ? 'jpg' : ext),
-                        tags: '',
-                        description: '',
-                        previewUrl: compressed.dataUrl
-                    });
-                    
-                    addPreview(filesToUpload[filesToUpload.length - 1]);
+                    fileData = compressed.blob;
+                    previewUrl = compressed.dataUrl;
+                    finalExt = compressed.convertedToJpg ? 'jpg' : (ext === 'jpeg' ? 'jpg' : ext);
+                } else {
+                    fileData = file;
+                    previewUrl = null;
+                    finalExt = ext;
                 }
+                
+                const fileType = isImage ? 'image' : isVideo ? 'video' : isAudio ? 'audio' : 'pdf';
+                
+                filesToUpload.push({
+                    id, file: fileData, originalName: file.name, originalSize: file.size,
+                    compressedSize: fileData.size, newName: sanitizeFilename(baseName),
+                    extension: finalExt, fileType, tags: '', description: '', previewUrl
+                });
+                
+                addPreview(filesToUpload[filesToUpload.length - 1]);
             }
             status.className = 'status';
-            updateUploadButton();
+            uploadBtn.disabled = filesToUpload.length === 0;
         }
 
         function sanitizeFilename(name) {
@@ -464,38 +492,19 @@
                 const img = new Image();
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
-                
                 img.onload = () => {
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-                        if (width > height) {
-                            height = Math.round((height * MAX_DIMENSION) / width);
-                            width = MAX_DIMENSION;
-                        } else {
-                            width = Math.round((width * MAX_DIMENSION) / height);
-                            height = MAX_DIMENSION;
-                        }
+                    let w = img.width, h = img.height;
+                    if (w > MAX_DIMENSION || h > MAX_DIMENSION) {
+                        if (w > h) { h = Math.round((h * MAX_DIMENSION) / w); w = MAX_DIMENSION; }
+                        else { w = Math.round((w * MAX_DIMENSION) / h); h = MAX_DIMENSION; }
                     }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
+                    canvas.width = w; canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
                     const dataUrl = canvas.toDataURL('image/jpeg', quality);
-                    
-                    fetch(dataUrl)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            resolve({
-                                blob,
-                                dataUrl,
-                                convertedToJpg: file.type !== 'image/jpeg'
-                            });
-                        });
+                    fetch(dataUrl).then(r => r.blob()).then(blob => {
+                        resolve({ blob, dataUrl, convertedToJpg: file.type !== 'image/jpeg' });
+                    });
                 };
-                
                 img.src = URL.createObjectURL(file);
             });
         }
@@ -506,126 +515,93 @@
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
         }
 
-        function addPreview(fileObj) {
+        function getFileIcon(type) {
+            return { video: '🎬', audio: '🎵', pdf: '📄' }[type] || '📷';
+        }
+
+        function addPreview(f) {
             const div = document.createElement('div');
             div.className = 'preview-item';
-            div.id = `preview-${fileObj.id}`;
-            
-            const savedPercent = Math.round((1 - fileObj.compressedSize / fileObj.originalSize) * 100);
-            const sizeInfo = savedPercent > 0 
-                ? `${formatSize(fileObj.originalSize)} → <span class="compressed">${formatSize(fileObj.compressedSize)} (${savedPercent}% smaller)</span>`
-                : formatSize(fileObj.compressedSize);
-            
+            div.id = `preview-${f.id}`;
+            const saved = Math.round((1 - f.compressedSize / f.originalSize) * 100);
+            const sizeInfo = saved > 0 && f.fileType === 'image'
+                ? `${formatSize(f.originalSize)} → <span class="compressed">${formatSize(f.compressedSize)} (${saved}% smaller)</span>`
+                : formatSize(f.compressedSize);
+            const thumb = f.previewUrl ? `<img src="${f.previewUrl}">` : getFileIcon(f.fileType);
             div.innerHTML = `
-                <img src="${fileObj.previewUrl}" alt="">
+                <div class="thumb">${thumb}</div>
                 <div class="details">
-                    <div class="file-info">${fileObj.originalName} • ${sizeInfo}</div>
-                    <input type="text" placeholder="Filename" value="${fileObj.newName}" data-id="${fileObj.id}" data-field="name">
-                    <input type="text" placeholder="Tags: burger, food, restaurant" data-id="${fileObj.id}" data-field="tags">
-                    <input type="text" placeholder="Description: A juicy burger" data-id="${fileObj.id}" data-field="desc">
+                    <div class="file-info">${f.originalName} • ${sizeInfo}<span class="type-badge">${f.fileType.toUpperCase()}</span></div>
+                    <input type="text" placeholder="Filename" value="${f.newName}" data-id="${f.id}" data-field="name">
+                    <input type="text" placeholder="Tags: reference, mood" data-id="${f.id}" data-field="tags">
+                    <input type="text" placeholder="Description" data-id="${f.id}" data-field="desc">
                 </div>
-                <button class="remove" onclick="removeFile('${fileObj.id}')">✕</button>
-            `;
-            
-            div.querySelectorAll('input').forEach(input => {
-                input.addEventListener('change', (e) => {
-                    const id = e.target.dataset.id;
-                    const field = e.target.dataset.field;
-                    const fileObj = filesToUpload.find(f => f.id === id);
-                    if (fileObj) {
-                        if (field === 'name') fileObj.newName = sanitizeFilename(e.target.value);
-                        if (field === 'tags') fileObj.tags = e.target.value;
-                        if (field === 'desc') fileObj.description = e.target.value;
-                        if (field === 'name') e.target.value = fileObj.newName;
+                <button class="remove" onclick="removeFile('${f.id}')">✕</button>`;
+            div.querySelectorAll('input').forEach(inp => {
+                inp.addEventListener('change', (e) => {
+                    const obj = filesToUpload.find(x => x.id === e.target.dataset.id);
+                    if (obj) {
+                        if (e.target.dataset.field === 'name') { obj.newName = sanitizeFilename(e.target.value); e.target.value = obj.newName; }
+                        if (e.target.dataset.field === 'tags') obj.tags = e.target.value;
+                        if (e.target.dataset.field === 'desc') obj.description = e.target.value;
                     }
                 });
             });
-            
             previewContainer.appendChild(div);
         }
 
         function removeFile(id) {
             filesToUpload = filesToUpload.filter(f => f.id !== id);
             document.getElementById(`preview-${id}`)?.remove();
-            updateUploadButton();
-        }
-
-        function updateUploadButton() {
             uploadBtn.disabled = filesToUpload.length === 0;
         }
 
-        uploadBtn.addEventListener('click', uploadFiles);
-
-        async function uploadFiles() {
+        uploadBtn.addEventListener('click', async () => {
             const folder = folderSelect.value;
             uploadBtn.disabled = true;
             uploadedUrls.innerHTML = '';
             progressBar.style.display = 'block';
-            
             let uploaded = 0;
             const total = filesToUpload.length;
             
-            for (const fileObj of filesToUpload) {
-                const filename = `${fileObj.newName}.${fileObj.extension}`;
+            for (const f of filesToUpload) {
+                const filename = `${f.newName}.${f.extension}`;
                 showStatus('uploading', `Uploading ${filename}... (${uploaded + 1}/${total})`);
                 progressFill.style.width = `${(uploaded / total) * 100}%`;
-                
                 try {
-                    const base64 = await blobToBase64(fileObj.file);
-                    
-                    const response = await fetch('/api/upload', {
+                    const base64 = await new Promise((res, rej) => {
+                        const reader = new FileReader();
+                        reader.onload = () => res(reader.result.split(',')[1]);
+                        reader.onerror = rej;
+                        reader.readAsDataURL(f.file);
+                    });
+                    const resp = await fetch('/api/upload', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            filename,
-                            content: base64,
-                            folder,
-                            tags: fileObj.tags || null,
-                            description: fileObj.description || null
-                        })
+                        body: JSON.stringify({ filename, content: base64, folder, tags: f.tags || null, description: f.description || null })
                     });
-                    
-                    const text = await response.text();
-                    let data;
-                    try { data = JSON.parse(text); } 
-                    catch (e) { throw new Error(`Server error: ${text.substring(0, 100)}`); }
-                    
-                    if (!response.ok) throw new Error(data.error || 'Upload failed');
-                    
-                    addUploadedUrl(data.url, filename);
+                    const data = await resp.json();
+                    if (!resp.ok) throw new Error(data.error || 'Upload failed');
+                    addUploadedUrl(data.url, filename, f.fileType);
                     uploaded++;
                     progressFill.style.width = `${(uploaded / total) * 100}%`;
-                    
                 } catch (err) {
                     showStatus('error', `Error: ${err.message}`);
                     uploadBtn.disabled = false;
                     return;
                 }
             }
-            
-            showStatus('success', `✅ Uploaded ${uploaded} image${uploaded > 1 ? 's' : ''}!`);
+            showStatus('success', `✅ Uploaded ${uploaded} file${uploaded > 1 ? 's' : ''}!`);
             filesToUpload = [];
             previewContainer.innerHTML = '';
             fileInput.value = '';
             progressBar.style.display = 'none';
-            updateUploadButton();
-        }
+            uploadBtn.disabled = true;
+        });
 
-        function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result.split(',')[1]);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        }
+        function showStatus(type, msg) { status.className = `status ${type}`; statusText.textContent = msg; }
 
-        function showStatus(type, message) {
-            status.className = `status ${type}`;
-            statusText.textContent = message;
-        }
-
-        function addUploadedUrl(url, filename) {
+        function addUploadedUrl(url, filename, fileType) {
             const div = document.createElement('div');
             div.className = 'uploaded-item';
             div.innerHTML = `
@@ -633,66 +609,62 @@
                     <input type="text" value="${url}" readonly onclick="this.select()">
                     <button class="copy-btn" onclick="copyText('${url}', this)">📋 Copy</button>
                 </div>
-                <div class="copy-formats">
+                <div class="action-row">
                     <button onclick="copyText('![${filename}](${url})', this)">Markdown</button>
                     <button onclick="copyText('<img src=&quot;${url}&quot; alt=&quot;${filename}&quot;>', this)">HTML</button>
-                    <button onclick="copyText('${url} --iw 2', this)">Midjourney</button>
-                    <button onclick="copyText('${url}', this)">URL</button>
-                </div>
-            `;
+                    ${fileType === 'image' ? `<button onclick="copyText('${url} --iw 2', this)">Midjourney</button>` : ''}
+                    <button onclick="showQrCode('${url}')">📱 QR</button>
+                    <button onclick="window.open('${url}')">🔗 Open</button>
+                </div>`;
             uploadedUrls.appendChild(div);
         }
 
         function copyText(text, btn) {
             navigator.clipboard.writeText(text).then(() => {
                 const orig = btn.textContent;
-                btn.textContent = '✓ Copied!';
+                btn.textContent = '✓';
                 setTimeout(() => btn.textContent = orig, 1500);
             });
         }
 
-        // New Folder Modal
-        function showNewFolderModal() {
-            document.getElementById('newFolderModal').classList.add('active');
-            document.getElementById('newFolderName').focus();
+        function downloadFolder() {
+            window.location.href = `/api/download?folder=${folderSelect.value}`;
         }
 
-        function closeNewFolderModal() {
-            document.getElementById('newFolderModal').classList.remove('active');
-            document.getElementById('newFolderName').value = '';
+        function showQrCode(url) {
+            currentQrUrl = url;
+            document.getElementById('qrImage').src = `/api/qr?url=${encodeURIComponent(url)}&size=200`;
+            document.getElementById('qrModal').classList.add('active');
         }
+
+        function downloadQr() {
+            const link = document.createElement('a');
+            link.href = `/api/qr?url=${encodeURIComponent(currentQrUrl)}&size=400`;
+            link.download = 'qr-code.png';
+            link.click();
+        }
+
+        function showNewFolderModal() { document.getElementById('newFolderModal').classList.add('active'); document.getElementById('newFolderName').focus(); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
         async function createFolder() {
             const name = document.getElementById('newFolderName').value.trim();
             if (!name) return;
-            
             try {
-                const response = await fetch('/api/folders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name })
-                });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
+                const resp = await fetch('/api/folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+                const data = await resp.json();
+                if (resp.ok) {
                     folders.push(data.folder);
-                    renderFolderSelect();
+                    folderSelect.innerHTML = folders.map(f => `<option value="${f}">${f}</option>`).join('');
                     folderSelect.value = data.folder;
-                    closeNewFolderModal();
-                } else {
-                    alert('Error: ' + (data.error || 'Failed to create folder'));
-                }
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
+                    closeModal('newFolderModal');
+                    document.getElementById('newFolderName').value = '';
+                } else alert('Error: ' + data.error);
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
-        document.getElementById('newFolderName').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') createFolder();
-        });
-
-        // Initialize
+        document.getElementById('newFolderName').addEventListener('keypress', (e) => { if (e.key === 'Enter') createFolder(); });
+        document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); }));
         loadFolders();
     </script>
 </body>
