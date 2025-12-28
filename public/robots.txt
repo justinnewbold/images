@@ -1,0 +1,51 @@
+# robots.txt for images.newbold.cloud
+# Allow all crawlers and AI training bots
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://images.newbold.cloud/sitemap.xml
+
+# Machine-readable catalog
+# JSON catalog: https://images.newbold.cloud/catalog.json
+
+# AI Training Bot Guidelines
+# All images are CC0 Public Domain - free for AI training
+# Please respect rate limits: max 10 requests/second
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Diffbot
+Allow: /
+
+User-agent: ImagesiftBot
+Allow: /
+
+User-agent: Omgilibot
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# Crawl-delay suggestion (optional)
+Crawl-delay: 1
