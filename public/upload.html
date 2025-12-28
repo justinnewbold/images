@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Uploader - newbold.cloud</title>
-    <meta name="description" content="Upload and host images for AI image generation. Get instant URLs for Midjourney, DALL-E, Stable Diffusion and more.">
+    <meta name="description" content="Upload and host images for AI image generation">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -15,14 +15,28 @@
             padding: 40px 20px;
         }
         .container { max-width: 700px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
         h1 {
-            font-size: 2rem;
-            margin-bottom: 8px;
+            font-size: 1.8rem;
             background: linear-gradient(90deg, #00d4ff, #7b2cbf);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .subtitle { color: #888; margin-bottom: 30px; }
+        .header-links { display: flex; gap: 12px; }
+        .header-links a {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .header-links a:hover { background: rgba(255,255,255,0.2); }
         .upload-card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
@@ -30,14 +44,35 @@
             padding: 30px;
             margin-bottom: 24px;
         }
-        .form-group { margin-bottom: 20px; }
+        .tip-box {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+        .tip-box strong { color: #00d4ff; }
+        .tip-box kbd {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .form-group { flex: 1; }
         .form-group label {
             display: block;
             margin-bottom: 8px;
             color: #aaa;
             font-size: 0.9rem;
         }
-        .form-group select, .form-group input, .form-group textarea {
+        .form-group select, .form-group input {
             width: 100%;
             padding: 12px 16px;
             border-radius: 8px;
@@ -46,26 +81,45 @@
             color: #fff;
             font-size: 1rem;
         }
-        .form-group select:focus, .form-group input:focus, .form-group textarea:focus {
+        .form-group select:focus, .form-group input:focus {
             outline: none;
             border-color: #00d4ff;
         }
+        .folder-row {
+            display: flex;
+            gap: 8px;
+        }
+        .folder-row select { flex: 1; }
+        .folder-row button {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            cursor: pointer;
+        }
+        .folder-row button:hover { background: rgba(255,255,255,0.1); }
         .drop-zone {
             border: 2px dashed rgba(255,255,255,0.3);
             border-radius: 12px;
-            padding: 40px 20px;
+            padding: 50px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             margin-bottom: 20px;
         }
-        .drop-zone:hover, .drop-zone.dragover {
+        .drop-zone:hover, .drop-zone.dragover, .drop-zone.paste-ready {
             border-color: #00d4ff;
             background: rgba(0,212,255,0.1);
         }
         .drop-zone-icon { font-size: 3rem; margin-bottom: 12px; }
         .drop-zone-text { color: #888; }
-        .drop-zone-text span { color: #00d4ff; text-decoration: underline; }
+        .drop-zone-text span { color: #00d4ff; }
+        .drop-zone-hint {
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: #666;
+        }
         #fileInput { display: none; }
         .preview-container {
             display: flex;
@@ -89,9 +143,7 @@
             flex-shrink: 0;
         }
         .preview-item .details { flex: 1; }
-        .preview-item .filename-input,
-        .preview-item .tags-input,
-        .preview-item .desc-input {
+        .preview-item input {
             width: 100%;
             padding: 8px 12px;
             margin-bottom: 8px;
@@ -101,6 +153,12 @@
             color: #fff;
             font-size: 0.85rem;
         }
+        .preview-item .file-info {
+            font-size: 0.75rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .preview-item .file-info .compressed { color: #00ff64; }
         .preview-item .remove {
             padding: 8px 12px;
             background: rgba(255,0,0,0.3);
@@ -109,13 +167,6 @@
             color: #fff;
             cursor: pointer;
         }
-        .preview-item .remove:hover { background: rgba(255,0,0,0.5); }
-        .preview-item .file-info {
-            font-size: 0.75rem;
-            color: #666;
-            margin-bottom: 8px;
-        }
-        .preview-item .file-info .compressed { color: #00ff64; }
         .upload-btn {
             width: 100%;
             padding: 16px;
@@ -126,7 +177,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, opacity 0.2s;
+            transition: transform 0.2s;
         }
         .upload-btn:hover:not(:disabled) { transform: translateY(-2px); }
         .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -136,55 +187,9 @@
             border-radius: 8px;
             display: none;
         }
-        .status.success {
-            display: block;
-            background: rgba(0,255,100,0.1);
-            border: 1px solid rgba(0,255,100,0.3);
-        }
-        .status.error {
-            display: block;
-            background: rgba(255,0,0,0.1);
-            border: 1px solid rgba(255,0,0,0.3);
-        }
-        .status.uploading {
-            display: block;
-            background: rgba(0,212,255,0.1);
-            border: 1px solid rgba(0,212,255,0.3);
-        }
-        .uploaded-urls { margin-top: 20px; }
-        .uploaded-url {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-        .uploaded-url input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: #00d4ff;
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        .uploaded-url button {
-            padding: 6px 12px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            color: #fff;
-            cursor: pointer;
-        }
-        .uploaded-url button:hover { background: rgba(255,255,255,0.2); }
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #888;
-            text-decoration: none;
-        }
-        .back-link:hover { color: #00d4ff; }
+        .status.success { display: block; background: rgba(0,255,100,0.1); border: 1px solid rgba(0,255,100,0.3); }
+        .status.error { display: block; background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.3); }
+        .status.uploading { display: block; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); }
         .progress-bar {
             width: 100%;
             height: 4px;
@@ -199,80 +204,129 @@
             width: 0%;
             transition: width 0.3s ease;
         }
-        .ready-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            background: rgba(0,255,100,0.2);
-            border: 1px solid rgba(0,255,100,0.4);
-            border-radius: 20px;
-            font-size: 0.75rem;
-            color: #00ff64;
-            margin-left: 10px;
-        }
-        .tip-box {
-            background: rgba(0,212,255,0.1);
-            border: 1px solid rgba(0,212,255,0.3);
+        .uploaded-urls { margin-top: 20px; }
+        .uploaded-item {
+            background: rgba(0,0,0,0.3);
             border-radius: 8px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            font-size: 0.85rem;
-            color: #aaa;
+            padding: 12px;
+            margin-bottom: 8px;
         }
-        .tip-box strong { color: #00d4ff; }
-        .quality-select {
+        .uploaded-item .url-row {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .uploaded-item input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00d4ff;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .uploaded-item .copy-btn {
+            padding: 6px 12px;
+            background: rgba(0,212,255,0.2);
+            border: none;
+            border-radius: 4px;
+            color: #00d4ff;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .uploaded-item .copy-formats {
+            display: flex;
+            gap: 6px;
+        }
+        .uploaded-item .copy-formats button {
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .uploaded-item .copy-formats button:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
             align-items: center;
         }
-        .quality-select select {
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h3 { margin-bottom: 16px; }
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            margin-bottom: 16px;
+        }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button {
             flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
         }
-        .quality-select .size-info {
-            font-size: 0.8rem;
-            color: #888;
-            min-width: 80px;
-        }
+        .modal-buttons .cancel { background: rgba(255,255,255,0.1); color: #fff; }
+        .modal-buttons .create { background: linear-gradient(90deg, #00d4ff, #7b2cbf); color: #fff; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📤 Image Uploader <span class="ready-badge">✓ Ready</span></h1>
-        <p class="subtitle">Drag & drop images to upload instantly</p>
+        <div class="header">
+            <h1>📤 Image Uploader</h1>
+            <div class="header-links">
+                <a href="/gallery.html">🖼️ Gallery</a>
+                <a href="/">🏠 Home</a>
+            </div>
+        </div>
         
         <div class="upload-card">
             <div class="tip-box">
-                <strong>💡 Tip:</strong> Large images are automatically compressed. Add tags and descriptions to help AI tools understand your images.
+                <strong>💡 Pro Tips:</strong> 
+                Paste screenshots with <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd> anywhere on this page!
+                Large images auto-compress. Add tags to help AI tools find your images.
             </div>
             
-            <div class="form-group">
-                <label>📁 Upload to folder</label>
-                <select id="folderSelect">
-                    <option value="references">references - AI reference images</option>
-                    <option value="logos">logos - Brand logos & icons</option>
-                    <option value="textures">textures - Textures & patterns</option>
-                    <option value="photos">photos - General photos</option>
-                    <option value="assets">assets - Misc resources</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>🖼️ Image Quality</label>
-                <div class="quality-select">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>📁 Folder</label>
+                    <div class="folder-row">
+                        <select id="folderSelect"></select>
+                        <button onclick="showNewFolderModal()" title="Create new folder">➕</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🖼️ Quality</label>
                     <select id="qualitySelect">
                         <option value="0.9">High (90%)</option>
-                        <option value="0.8" selected>Medium (80%) - Recommended</option>
-                        <option value="0.6">Low (60%) - Faster uploads</option>
+                        <option value="0.8" selected>Medium (80%)</option>
+                        <option value="0.6">Low (60%)</option>
                     </select>
-                    <span class="size-info">Max ~4MB</span>
                 </div>
             </div>
             
             <div class="drop-zone" id="dropZone">
                 <div class="drop-zone-icon">🖼️</div>
                 <p class="drop-zone-text">
-                    Drag & drop images here<br>
-                    or <span>click to browse</span>
+                    Drag & drop images or <span>click to browse</span>
                 </p>
+                <p class="drop-zone-hint">Or paste from clipboard (Ctrl+V / Cmd+V)</p>
             </div>
             <input type="file" id="fileInput" multiple accept="image/*">
             
@@ -289,14 +343,25 @@
             
             <div class="uploaded-urls" id="uploadedUrls"></div>
         </div>
-        
-        <a href="/" class="back-link">← Back to Image Assets</a>
+    </div>
+
+    <!-- New Folder Modal -->
+    <div class="modal" id="newFolderModal">
+        <div class="modal-content">
+            <h3>📁 Create New Folder</h3>
+            <input type="text" id="newFolderName" placeholder="folder-name">
+            <div class="modal-buttons">
+                <button class="cancel" onclick="closeNewFolderModal()">Cancel</button>
+                <button class="create" onclick="createFolder()">Create</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const MAX_SIZE = 4 * 1024 * 1024; // 4MB max for Vercel
-        const MAX_DIMENSION = 2048; // Max width/height
-        
+        const MAX_DIMENSION = 2048;
+        let filesToUpload = [];
+        let folders = ['references', 'logos', 'textures', 'photos', 'assets'];
+
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const previewContainer = document.getElementById('previewContainer');
@@ -308,40 +373,65 @@
         const uploadedUrls = document.getElementById('uploadedUrls');
         const folderSelect = document.getElementById('folderSelect');
         const qualitySelect = document.getElementById('qualitySelect');
-        
-        let filesToUpload = [];
-        
+
+        // Load folders from API
+        async function loadFolders() {
+            try {
+                const response = await fetch('/api/folders');
+                const data = await response.json();
+                if (data.folders) {
+                    folders = data.folders.filter(f => f !== 'index.html' && !f.endsWith('.html'));
+                }
+            } catch (e) {
+                console.log('Using default folders');
+            }
+            renderFolderSelect();
+        }
+
+        function renderFolderSelect() {
+            folderSelect.innerHTML = folders.map(f => 
+                `<option value="${f}">${f}</option>`
+            ).join('');
+        }
+
+        // Drag and drop
         dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
-        
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
-        
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
             handleFiles(e.dataTransfer.files);
         });
-        
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        // PASTE SUPPORT
+        document.addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = item.getAsFile();
+                    if (file) {
+                        dropZone.classList.add('paste-ready');
+                        setTimeout(() => dropZone.classList.remove('paste-ready'), 500);
+                        await handleFiles([file]);
+                    }
+                }
+            }
         });
-        
+
         async function handleFiles(files) {
             for (const file of files) {
                 if (file.type.startsWith('image/')) {
                     showStatus('uploading', `Processing ${file.name}...`);
                     
                     const id = Date.now() + Math.random().toString(36).substr(2, 9);
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    const baseName = file.name.replace(/\.[^/.]+$/, '');
+                    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+                    const baseName = file.name.replace(/\.[^/.]+$/, '') || `image-${Date.now()}`;
                     
-                    // Compress image
                     const quality = parseFloat(qualitySelect.value);
                     const compressed = await compressImage(file, quality);
                     
@@ -352,7 +442,7 @@
                         originalSize: file.size,
                         compressedSize: compressed.blob.size,
                         newName: sanitizeFilename(baseName),
-                        extension: ext === 'png' && compressed.convertedToJpg ? 'jpg' : ext,
+                        extension: compressed.convertedToJpg ? 'jpg' : (ext === 'jpeg' ? 'jpg' : ext),
                         tags: '',
                         description: '',
                         previewUrl: compressed.dataUrl
@@ -364,11 +454,11 @@
             status.className = 'status';
             updateUploadButton();
         }
-        
+
         function sanitizeFilename(name) {
-            return name.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').toLowerCase();
+            return name.replace(/[^a-zA-Z0-9-_]/g, '-').replace(/-+/g, '-').toLowerCase().substring(0, 50);
         }
-        
+
         async function compressImage(file, quality) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -379,7 +469,6 @@
                     let width = img.width;
                     let height = img.height;
                     
-                    // Resize if too large
                     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
                         if (width > height) {
                             height = Math.round((height * MAX_DIMENSION) / width);
@@ -394,11 +483,8 @@
                     canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Convert to JPEG for better compression (unless it's a PNG with transparency we need to keep)
-                    const outputType = 'image/jpeg';
-                    const dataUrl = canvas.toDataURL(outputType, quality);
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
                     
-                    // Convert data URL to blob
                     fetch(dataUrl)
                         .then(res => res.blob())
                         .then(blob => {
@@ -413,13 +499,13 @@
                 img.src = URL.createObjectURL(file);
             });
         }
-        
+
         function formatSize(bytes) {
             if (bytes < 1024) return bytes + ' B';
             if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
         }
-        
+
         function addPreview(fileObj) {
             const div = document.createElement('div');
             div.className = 'preview-item';
@@ -428,54 +514,48 @@
             const savedPercent = Math.round((1 - fileObj.compressedSize / fileObj.originalSize) * 100);
             const sizeInfo = savedPercent > 0 
                 ? `${formatSize(fileObj.originalSize)} → <span class="compressed">${formatSize(fileObj.compressedSize)} (${savedPercent}% smaller)</span>`
-                : `${formatSize(fileObj.compressedSize)}`;
+                : formatSize(fileObj.compressedSize);
             
             div.innerHTML = `
-                <img src="${fileObj.previewUrl}" alt="${fileObj.originalName}">
+                <img src="${fileObj.previewUrl}" alt="">
                 <div class="details">
                     <div class="file-info">${fileObj.originalName} • ${sizeInfo}</div>
-                    <input type="text" class="filename-input" placeholder="Filename (without extension)" value="${fileObj.newName}" data-id="${fileObj.id}" onchange="updateFileName(this)">
-                    <input type="text" class="tags-input" placeholder="Tags: burger, food, restaurant" data-id="${fileObj.id}" onchange="updateTags(this)">
-                    <input type="text" class="desc-input" placeholder="Description: A juicy burger with cheese" data-id="${fileObj.id}" onchange="updateDesc(this)">
+                    <input type="text" placeholder="Filename" value="${fileObj.newName}" data-id="${fileObj.id}" data-field="name">
+                    <input type="text" placeholder="Tags: burger, food, restaurant" data-id="${fileObj.id}" data-field="tags">
+                    <input type="text" placeholder="Description: A juicy burger" data-id="${fileObj.id}" data-field="desc">
                 </div>
                 <button class="remove" onclick="removeFile('${fileObj.id}')">✕</button>
             `;
+            
+            div.querySelectorAll('input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const id = e.target.dataset.id;
+                    const field = e.target.dataset.field;
+                    const fileObj = filesToUpload.find(f => f.id === id);
+                    if (fileObj) {
+                        if (field === 'name') fileObj.newName = sanitizeFilename(e.target.value);
+                        if (field === 'tags') fileObj.tags = e.target.value;
+                        if (field === 'desc') fileObj.description = e.target.value;
+                        if (field === 'name') e.target.value = fileObj.newName;
+                    }
+                });
+            });
+            
             previewContainer.appendChild(div);
         }
-        
-        function updateFileName(input) {
-            const id = input.dataset.id;
-            const fileObj = filesToUpload.find(f => f.id === id);
-            if (fileObj) {
-                fileObj.newName = sanitizeFilename(input.value);
-                input.value = fileObj.newName;
-            }
-        }
-        
-        function updateTags(input) {
-            const id = input.dataset.id;
-            const fileObj = filesToUpload.find(f => f.id === id);
-            if (fileObj) fileObj.tags = input.value;
-        }
-        
-        function updateDesc(input) {
-            const id = input.dataset.id;
-            const fileObj = filesToUpload.find(f => f.id === id);
-            if (fileObj) fileObj.description = input.value;
-        }
-        
+
         function removeFile(id) {
             filesToUpload = filesToUpload.filter(f => f.id !== id);
             document.getElementById(`preview-${id}`)?.remove();
             updateUploadButton();
         }
-        
+
         function updateUploadButton() {
             uploadBtn.disabled = filesToUpload.length === 0;
         }
-        
+
         uploadBtn.addEventListener('click', uploadFiles);
-        
+
         async function uploadFiles() {
             const folder = folderSelect.value;
             uploadBtn.disabled = true;
@@ -497,45 +577,40 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            filename: filename,
+                            filename,
                             content: base64,
-                            folder: folder,
+                            folder,
                             tags: fileObj.tags || null,
                             description: fileObj.description || null
                         })
                     });
                     
-                    let data;
                     const text = await response.text();
-                    try {
-                        data = JSON.parse(text);
-                    } catch (e) {
-                        throw new Error(`Server error: ${text.substring(0, 100)}`);
-                    }
+                    let data;
+                    try { data = JSON.parse(text); } 
+                    catch (e) { throw new Error(`Server error: ${text.substring(0, 100)}`); }
                     
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Upload failed');
-                    }
+                    if (!response.ok) throw new Error(data.error || 'Upload failed');
                     
                     addUploadedUrl(data.url, filename);
                     uploaded++;
                     progressFill.style.width = `${(uploaded / total) * 100}%`;
                     
                 } catch (err) {
-                    showStatus('error', `Error uploading ${filename}: ${err.message}`);
+                    showStatus('error', `Error: ${err.message}`);
                     uploadBtn.disabled = false;
                     return;
                 }
             }
             
-            showStatus('success', `✅ Successfully uploaded ${uploaded} image${uploaded > 1 ? 's' : ''}!`);
+            showStatus('success', `✅ Uploaded ${uploaded} image${uploaded > 1 ? 's' : ''}!`);
             filesToUpload = [];
             previewContainer.innerHTML = '';
             fileInput.value = '';
             progressBar.style.display = 'none';
             updateUploadButton();
         }
-        
+
         function blobToBase64(blob) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -544,28 +619,81 @@
                 reader.readAsDataURL(blob);
             });
         }
-        
+
         function showStatus(type, message) {
             status.className = `status ${type}`;
             statusText.textContent = message;
         }
-        
+
         function addUploadedUrl(url, filename) {
             const div = document.createElement('div');
-            div.className = 'uploaded-url';
+            div.className = 'uploaded-item';
             div.innerHTML = `
-                <input type="text" value="${url}" readonly onclick="this.select()">
-                <button onclick="copyUrl(this, '${url}')">Copy</button>
+                <div class="url-row">
+                    <input type="text" value="${url}" readonly onclick="this.select()">
+                    <button class="copy-btn" onclick="copyText('${url}', this)">📋 Copy</button>
+                </div>
+                <div class="copy-formats">
+                    <button onclick="copyText('![${filename}](${url})', this)">Markdown</button>
+                    <button onclick="copyText('<img src=&quot;${url}&quot; alt=&quot;${filename}&quot;>', this)">HTML</button>
+                    <button onclick="copyText('${url} --iw 2', this)">Midjourney</button>
+                    <button onclick="copyText('${url}', this)">URL</button>
+                </div>
             `;
             uploadedUrls.appendChild(div);
         }
-        
-        function copyUrl(btn, url) {
-            navigator.clipboard.writeText(url).then(() => {
-                btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy', 2000);
+
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => btn.textContent = orig, 1500);
             });
         }
+
+        // New Folder Modal
+        function showNewFolderModal() {
+            document.getElementById('newFolderModal').classList.add('active');
+            document.getElementById('newFolderName').focus();
+        }
+
+        function closeNewFolderModal() {
+            document.getElementById('newFolderModal').classList.remove('active');
+            document.getElementById('newFolderName').value = '';
+        }
+
+        async function createFolder() {
+            const name = document.getElementById('newFolderName').value.trim();
+            if (!name) return;
+            
+            try {
+                const response = await fetch('/api/folders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    folders.push(data.folder);
+                    renderFolderSelect();
+                    folderSelect.value = data.folder;
+                    closeNewFolderModal();
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to create folder'));
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        document.getElementById('newFolderName').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') createFolder();
+        });
+
+        // Initialize
+        loadFolders();
     </script>
 </body>
 </html>
