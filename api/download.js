@@ -1,11 +1,3 @@
-import JSZip from 'jszip';
-
-export const config = {
-  api: {
-    responseLimit: false,
-  },
-};
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -51,35 +43,19 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'No files found in folder' });
     }
 
-    // Create ZIP
-    const zip = new JSZip();
+    // Return download links
+    const downloadLinks = mediaFiles.map(f => ({
+      name: f.name,
+      downloadUrl: f.download_url,
+      viewUrl: `https://images.newbold.cloud/${folder}/${f.name}`,
+      size: f.size
+    }));
 
-    // Download and add each file to ZIP
-    for (const file of mediaFiles) {
-      try {
-        const fileResponse = await fetch(file.download_url);
-        if (fileResponse.ok) {
-          const buffer = await fileResponse.arrayBuffer();
-          zip.file(file.name, buffer);
-        }
-      } catch (e) {
-        console.error(`Failed to add ${file.name}:`, e);
-      }
-    }
-
-    // Generate ZIP buffer
-    const zipBuffer = await zip.generateAsync({ 
-      type: 'nodebuffer',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
+    return res.status(200).json({
+      folder,
+      count: downloadLinks.length,
+      files: downloadLinks
     });
-
-    // Send ZIP file
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename="${folder}-images.zip"`);
-    res.setHeader('Content-Length', zipBuffer.length);
-    
-    return res.status(200).send(zipBuffer);
 
   } catch (error) {
     return res.status(500).json({ error: error.message });
