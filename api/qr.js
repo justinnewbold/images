@@ -13,8 +13,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Use Google Charts API for QR code generation (free, no dependencies)
-    const qrUrl = `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(url)}&choe=UTF-8`;
+    // Use goqr.me API (free, reliable QR generator)
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
     
     const response = await fetch(qrUrl);
     
