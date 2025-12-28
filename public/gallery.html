@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery - newbold.cloud</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .header {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .search-box {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.9rem;
+            width: 250px;
+        }
+        .search-box:focus { outline: none; border-color: #00d4ff; }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            color: #fff;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .folders-bar {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .folder-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .folder-tab:hover { border-color: #00d4ff; color: #fff; }
+        .folder-tab.active {
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            border-color: transparent;
+            color: #fff;
+        }
+        .folder-tab .count {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            margin-left: 6px;
+        }
+        .stats-bar {
+            max-width: 1400px;
+            margin: 0 auto 20px;
+            display: flex;
+            gap: 20px;
+            padding: 16px 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            flex-wrap: wrap;
+        }
+        .stat {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #00d4ff;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        .gallery {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .image-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .image-card:hover {
+            border-color: #00d4ff;
+            transform: translateY(-4px);
+        }
+        .image-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        .image-card .info {
+            padding: 12px;
+        }
+        .image-card .name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .image-card .meta {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 8px;
+        }
+        .image-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .image-card .tag {
+            background: rgba(0,212,255,0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            color: #00d4ff;
+        }
+        .image-card .actions {
+            display: flex;
+            gap: 6px;
+        }
+        .image-card .actions button {
+            flex: 1;
+            padding: 6px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .image-card .actions .copy-btn {
+            background: rgba(0,212,255,0.2);
+            color: #00d4ff;
+        }
+        .image-card .actions .edit-btn {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .image-card .actions .delete-btn {
+            background: rgba(255,0,0,0.2);
+            color: #ff6b6b;
+        }
+        .image-card .actions button:hover { opacity: 0.8; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 16px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 { font-size: 1.2rem; }
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-body { padding: 20px; }
+        .modal-body img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .url-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .url-box input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #00d4ff;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+        .copy-formats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .copy-formats button {
+            padding: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .copy-formats button:hover { background: rgba(255,255,255,0.1); }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .modal-actions button { flex: 1; padding: 12px; }
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: #888;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #888;
+        }
+        .empty-state h3 { margin-bottom: 10px; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🖼️ Image Gallery</h1>
+        <div class="header-actions">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search by name or tag...">
+            <a href="/upload.html" class="btn btn-primary">📤 Upload</a>
+            <a href="/" class="btn btn-secondary">← Home</a>
+        </div>
+    </div>
+
+    <div class="folders-bar" id="foldersBar">
+        <div class="folder-tab active" data-folder="all">All <span class="count" id="countAll">0</span></div>
+        <div class="folder-tab" data-folder="references">References <span class="count" id="countReferences">0</span></div>
+        <div class="folder-tab" data-folder="logos">Logos <span class="count" id="countLogos">0</span></div>
+        <div class="folder-tab" data-folder="textures">Textures <span class="count" id="countTextures">0</span></div>
+        <div class="folder-tab" data-folder="photos">Photos <span class="count" id="countPhotos">0</span></div>
+        <div class="folder-tab" data-folder="assets">Assets <span class="count" id="countAssets">0</span></div>
+    </div>
+
+    <div class="stats-bar" id="statsBar">
+        <div class="stat">
+            <div class="stat-value" id="totalImages">0</div>
+            <div class="stat-label">Total Images</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="totalTagged">0</div>
+            <div class="stat-label">Tagged</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="totalSize">0 MB</div>
+            <div class="stat-label">Total Size</div>
+        </div>
+    </div>
+
+    <div class="gallery" id="gallery">
+        <div class="loading">Loading images...</div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Image Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" src="" alt="">
+                
+                <div class="url-box">
+                    <input type="text" id="modalUrl" readonly onclick="this.select()">
+                    <button class="btn btn-primary" onclick="copyUrl()">Copy</button>
+                </div>
+
+                <div class="copy-formats">
+                    <button onclick="copyAs('markdown')">📝 Markdown</button>
+                    <button onclick="copyAs('html')">🌐 HTML</button>
+                    <button onclick="copyAs('midjourney')">🎨 Midjourney</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Tags (comma separated)</label>
+                    <input type="text" id="modalTags" placeholder="burger, food, restaurant">
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="modalDesc" rows="2" placeholder="A juicy burger with cheese"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" onclick="saveChanges()">💾 Save Changes</button>
+                    <button class="btn btn-secondary" style="background: rgba(255,0,0,0.2); color: #ff6b6b;" onclick="deleteImage()">🗑️ Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allImages = [];
+        let currentFolder = 'all';
+        let currentImage = null;
+
+        async function loadImages() {
+            try {
+                const response = await fetch('/api/images');
+                const data = await response.json();
+                allImages = data.images || [];
+                
+                updateCounts();
+                renderGallery();
+            } catch (err) {
+                document.getElementById('gallery').innerHTML = `<div class="empty-state"><h3>Error loading images</h3><p>${err.message}</p></div>`;
+            }
+        }
+
+        function updateCounts() {
+            const counts = { all: 0, references: 0, logos: 0, textures: 0, photos: 0, assets: 0 };
+            let totalSize = 0;
+            let tagged = 0;
+
+            allImages.forEach(img => {
+                counts.all++;
+                counts[img.folder]++;
+                totalSize += img.size || 0;
+                if (img.tags) tagged++;
+            });
+
+            document.getElementById('countAll').textContent = counts.all;
+            document.getElementById('countReferences').textContent = counts.references;
+            document.getElementById('countLogos').textContent = counts.logos;
+            document.getElementById('countTextures').textContent = counts.textures;
+            document.getElementById('countPhotos').textContent = counts.photos;
+            document.getElementById('countAssets').textContent = counts.assets;
+
+            document.getElementById('totalImages').textContent = counts.all;
+            document.getElementById('totalTagged').textContent = tagged;
+            document.getElementById('totalSize').textContent = (totalSize / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function renderGallery() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            
+            let filtered = allImages.filter(img => {
+                if (currentFolder !== 'all' && img.folder !== currentFolder) return false;
+                if (searchTerm) {
+                    const matchName = img.name.toLowerCase().includes(searchTerm);
+                    const matchTags = img.tags && img.tags.toLowerCase().includes(searchTerm);
+                    const matchDesc = img.description && img.description.toLowerCase().includes(searchTerm);
+                    if (!matchName && !matchTags && !matchDesc) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                document.getElementById('gallery').innerHTML = `
+                    <div class="empty-state">
+                        <h3>No images found</h3>
+                        <p>${searchTerm ? 'Try a different search term' : 'Upload some images to get started'}</p>
+                        <a href="/upload.html" class="btn btn-primary" style="margin-top: 16px;">📤 Upload Images</a>
+                    </div>
+                `;
+                return;
+            }
+
+            document.getElementById('gallery').innerHTML = filtered.map(img => `
+                <div class="image-card" data-name="${img.name}" data-folder="${img.folder}">
+                    <img src="${img.url}" alt="${img.name}" onclick="openModal('${img.folder}', '${img.name}')" loading="lazy">
+                    <div class="info">
+                        <div class="name">${img.name}</div>
+                        <div class="meta">${img.folder} • ${formatSize(img.size)}</div>
+                        ${img.tags ? `<div class="tags">${img.tags.split(',').slice(0, 3).map(t => `<span class="tag">${t.trim()}</span>`).join('')}</div>` : ''}
+                        <div class="actions">
+                            <button class="copy-btn" onclick="quickCopy('${img.url}', this)">📋 Copy</button>
+                            <button class="edit-btn" onclick="openModal('${img.folder}', '${img.name}')">✏️</button>
+                            <button class="delete-btn" onclick="quickDelete('${img.folder}', '${img.name}')">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function formatSize(bytes) {
+            if (!bytes) return '?';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function quickCopy(url, btn) {
+            navigator.clipboard.writeText(url).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✓';
+                setTimeout(() => btn.innerHTML = orig, 1500);
+            });
+        }
+
+        async function quickDelete(folder, name) {
+            if (!confirm(`Delete ${name}?`)) return;
+            
+            try {
+                const response = await fetch('/api/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folder, filename: name })
+                });
+                
+                if (response.ok) {
+                    allImages = allImages.filter(img => !(img.folder === folder && img.name === name));
+                    updateCounts();
+                    renderGallery();
+                } else {
+                    const data = await response.json();
+                    alert('Delete failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
+        }
+
+        function openModal(folder, name) {
+            currentImage = allImages.find(img => img.folder === folder && img.name === name);
+            if (!currentImage) return;
+
+            document.getElementById('modalTitle').textContent = currentImage.name;
+            document.getElementById('modalImage').src = currentImage.url;
+            document.getElementById('modalUrl').value = currentImage.url;
+            document.getElementById('modalTags').value = currentImage.tags || '';
+            document.getElementById('modalDesc').value = currentImage.description || '';
+            
+            document.getElementById('imageModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').classList.remove('active');
+            currentImage = null;
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('modalUrl').value;
+            navigator.clipboard.writeText(url);
+        }
+
+        function copyAs(format) {
+            const url = currentImage.url;
+            const name = currentImage.name;
+            let text;
+            
+            switch (format) {
+                case 'markdown':
+                    text = `![${name}](${url})`;
+                    break;
+                case 'html':
+                    text = `<img src="${url}" alt="${name}">`;
+                    break;
+                case 'midjourney':
+                    text = `${url} --iw 2`;
+                    break;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`Copied as ${format}!`);
+            });
+        }
+
+        async function saveChanges() {
+            if (!currentImage) return;
+            
+            const tags = document.getElementById('modalTags').value;
+            const description = document.getElementById('modalDesc').value;
+            
+            try {
+                const response = await fetch('/api/metadata', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        folder: currentImage.folder,
+                        filename: currentImage.name,
+                        tags,
+                        description
+                    })
+                });
+                
+                if (response.ok) {
+                    currentImage.tags = tags;
+                    currentImage.description = description;
+                    updateCounts();
+                    renderGallery();
+                    closeModal();
+                } else {
+                    const data = await response.json();
+                    alert('Save failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Save failed: ' + err.message);
+            }
+        }
+
+        async function deleteImage() {
+            if (!currentImage) return;
+            if (!confirm(`Delete ${currentImage.name}? This cannot be undone.`)) return;
+            
+            await quickDelete(currentImage.folder, currentImage.name);
+            closeModal();
+        }
+
+        // Event listeners
+        document.querySelectorAll('.folder-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.folder-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFolder = tab.dataset.folder;
+                renderGallery();
+            });
+        });
+
+        document.getElementById('searchBox').addEventListener('input', renderGallery);
+
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('imageModal')) closeModal();
+        });
+
+        // Load images on page load
+        loadImages();
+    </script>
+</body>
+</html>
