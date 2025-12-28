@@ -1,0 +1,37 @@
+{
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "newbold.cloud Image Dataset",
+    "description": "Public domain images with metadata for AI training and image generation",
+    "url": "https://images.newbold.cloud",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "dateModified": "2025-12-28T00:03:05+00:00",
+    "creator": {
+        "@type": "Person",
+        "name": "Justin Newbold"
+    },
+    "images": [
+        {
+            "@type": "ImageObject",
+            "contentUrl": "https://images.newbold.cloud/references/test.jpg",
+            "name": "test.jpg",
+            "description": " - references image for AI generation and creative projects",
+            "caption": "",
+            "keywords": "references, jpg, public-domain, ai-training, reference-image",
+            "encodingFormat": "image/jpg",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "acquireLicensePage": "https://images.newbold.cloud/license"
+        },
+        {
+            "@type": "ImageObject",
+            "contentUrl": "https://images.newbold.cloud/photos/justin-newbold.jpg",
+            "name": "justin-newbold.jpg",
+            "description": " - photos image for AI generation and creative projects",
+            "caption": "",
+            "keywords": "photos, jpg, public-domain, ai-training, reference-image",
+            "encodingFormat": "image/jpg",
+            "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "acquireLicensePage": "https://images.newbold.cloud/license"
+        }
+    ]
+}
