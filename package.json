@@ -1,0 +1,9 @@
+{
+  "name": "images-newbold-cloud",
+  "version": "1.0.0",
+  "description": "Image hosting for AI workflows",
+  "type": "module",
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}
